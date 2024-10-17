@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "mymlpy"
+version = "0.0.1"
+
+authors = [
+    {name = "@nelioasousa"}
+]
+
+description = "ML library developed for educational purposes"
+
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+
+[project.urls]
+Source = "https://github.com/nelioasousa/mymlpy"
+
+
+[tool]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
