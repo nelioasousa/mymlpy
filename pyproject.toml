@@ -16,6 +16,9 @@ description = "ML library developed for educational purposes"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [project.urls]
 Source = "https://github.com/nelioasousa/mymlpy"
 
@@ -25,3 +28,6 @@ Source = "https://github.com/nelioasousa/mymlpy"
 [tool.setuptools.packages.find]
 where = ["src"]
 namespaces = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
