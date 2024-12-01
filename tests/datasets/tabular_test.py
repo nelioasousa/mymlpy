@@ -1,10 +1,26 @@
+import pytest
+
 from mymlpy.datasets.tabular import TabularDatasetBatchIterator
 
-class TestTabularDatasetBatchIterator:
-    def test_context(self):
-        """Check if the file is closed correcly after exiting context."""
-        pass
+from importlib.resources import files as resource_files
+from importlib.resources import as_file
 
+class TestTabularDatasetBatchIterator:
+    @pytest.fixture
+    def tabular_01_dataset(self):
+        resource = resource_files('tests.datasets').joinpath('resources/tabular_01.txt')
+        with as_file(resource) as fpath:
+            yield fpath
+    
+    def test_context(self, tabular_01_dataset):
+        """Check if the file is closed correcly after exiting context."""
+        ds = TabularDatasetBatchIterator(tabular_01_dataset, 2, (int, int, float), skip_lines=1)
+        assert ds._file is None
+        with ds:
+            fstream = ds._file
+            assert fstream.readable()
+        assert fstream.closed
+    
     def test_nested_contexts(self):
         """Check nested contexts restriction."""
         pass
