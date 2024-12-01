@@ -15,6 +15,12 @@ class TestTabularDatasetBatchIterator:
             yield fpath
     
     @pytest.fixture
+    def tabular_02_path(self):
+        resource = resource_files('tests.datasets').joinpath('resources/tabular_02.txt')
+        with as_file(resource) as fpath:
+            yield fpath
+    
+    @pytest.fixture
     def tabular_01_iterator(self, tabular_01_path):
         return TabularDatasetBatchIterator(tabular_01_path, 2, (int, float, int), skip_lines=1)
     
@@ -43,10 +49,21 @@ class TestTabularDatasetBatchIterator:
                 assert len(batch) == batch_size, f"Inconsistent size for batch #{counter}: expecting {batch_size}, got {len(batch)}"
                 counter += 1
     
-    def test_expand_sequences(self):
+    def test_expand_sequences(self, tabular_02_path):
         """Check if parsed sequences are expanded."""
-        pass
-
+        with open(tabular_02_path, 'r') as ds_file:
+            lines = ds_file.read().split('\n')[1:]
+        targets = [l.split(',')[2].split('-') for l in lines if l]
+        parser = (lambda x: x.split('-'))
+        ds = TabularDatasetBatchIterator(tabular_02_path, 1, (str, str, parser), skip_lines=1, expand_sequences=True)
+        with ds:
+            counter = 0
+            for batch in ds:
+                target = targets[counter]
+                result = batch[0][2:]
+                assert target == result, f"Fail expansion at line #{counter}: expecting {target}, got {result}"
+                counter += 1
+    
     def test_ignore_errors(self):
         """Test `ignore_errors` parameter."""
 
