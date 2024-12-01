@@ -51,7 +51,7 @@ class TabularDatasetBatchIterator:
         batch = []
         self._seek_batch_position(self._next_batch_index)
         while len(batch) < self.batch_size or self.batch_size < 1:
-            position = self._file.tell()
+            entry_position = self._file.tell()
             nextline = self._file.readline()
             if not nextline:
                 break
@@ -77,9 +77,10 @@ class TabularDatasetBatchIterator:
                 raise
             batch.append(entry)
             if len(batch) == 1:
-                self._store_batch_position(self._next_batch_index, position)
+                batch_position = entry_position
         if not batch:
             raise StopIteration("EOF reached")
+        self._store_batch_position(self._next_batch_index, batch_position)
         self._batch = batch
         self._next_batch_index += 1
         return batch
