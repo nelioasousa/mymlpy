@@ -67,7 +67,7 @@ class TabularDatasetBatchIterator:
             try:
                 for i, element in enumerate(elements):
                     element = self.parsers[i](element)
-                    if isinstance(element, Sequence) and self.expand_sequences:
+                    if isinstance(element, Sequence) and not isinstance(element, (str, bytes)) and self.expand_sequences:
                         entry.extend(element)
                     else:
                         entry.append(element)
