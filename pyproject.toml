@@ -9,6 +9,8 @@ version = "0.0.1"
 
 dependencies = ["numpy>=2.0"]
 
+requires-python = ">= 3.9"
+
 authors = [
     {name = "@nelioasousa"}
 ]
