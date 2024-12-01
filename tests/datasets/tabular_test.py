@@ -5,6 +5,7 @@ from mymlpy.datasets.tabular import TabularDatasetBatchIterator
 from importlib.resources import files as resource_files
 from importlib.resources import as_file
 
+
 class TestTabularDatasetBatchIterator:
     @pytest.fixture
     def tabular_01_dataset(self):

@@ -2,6 +2,7 @@ import numpy as np
 from pathlib import Path
 from collections.abc import Sequence
 
+
 class TabularDatasetBatchIterator:
     
     def __init__(self, file_path, batch_size, parsers, separator=",",
