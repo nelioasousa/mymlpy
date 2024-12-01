@@ -46,6 +46,11 @@ class TabularDatasetBatchIterator:
         self._reset_iterator(clear_batch_positions=True)
         return self
     
+    def iter(self, clear_batch_positions=False):
+        self._assert_open_context()
+        self._reset_iterator(clear_batch_positions=clear_batch_positions)
+        return self
+    
     def __next__(self):
         self._assert_open_context()
         batch = []
