@@ -16,7 +16,7 @@ class TestTabularDatasetBatchIterator:
     
     @pytest.fixture
     def tabular_01_iterator(self, tabular_01_path):
-        return TabularDatasetBatchIterator(tabular_01_path, 2, (int, int, float), skip_lines=1)
+        return TabularDatasetBatchIterator(tabular_01_path, 2, (int, float, int), skip_lines=1)
     
     def test_context(self, tabular_01_iterator):
         """Check if the file is closed correcly after exiting context."""
