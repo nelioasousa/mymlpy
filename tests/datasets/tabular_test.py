@@ -4,6 +4,7 @@ from mymlpy.datasets.tabular import TabularDatasetBatchIterator
 
 from importlib.resources import files as resource_files
 from importlib.resources import as_file
+from contextlib import ExitStack
 
 
 class TestTabularDatasetBatchIterator:
@@ -22,10 +23,14 @@ class TestTabularDatasetBatchIterator:
             assert fstream.readable()
         assert fstream.closed
     
-    def test_nested_contexts(self):
+    def test_nested_contexts(self, tabular_01_dataset):
         """Check nested contexts restriction."""
-        pass
-
+        ds = TabularDatasetBatchIterator(tabular_01_dataset, 4, (int, int, float), skip_lines=1)
+        with ExitStack() as stack:
+            stack.enter_context(pytest.raises(RuntimeError))
+            stack.enter_context(ds)
+            stack.enter_context(ds)
+    
     def test_batch_size(self):
         """Check the size of the batches."""
         pass
