@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 class TabularDatasetBatchIterator:
     
-    def __init__(self, file_path, batch_size, separator, parsers,
+    def __init__(self, file_path, batch_size, parsers, separator=",",
             skip_lines=0, expand_sequences=False, ignore_errors=False):
         self.file_path = Path(file_path).resolve()
         self.batch_size = batch_size
