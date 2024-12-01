@@ -9,27 +9,29 @@ from contextlib import ExitStack
 
 class TestTabularDatasetBatchIterator:
     @pytest.fixture
-    def tabular_01_dataset(self):
+    def tabular_01_path(self):
         resource = resource_files('tests.datasets').joinpath('resources/tabular_01.txt')
         with as_file(resource) as fpath:
             yield fpath
     
-    def test_context(self, tabular_01_dataset):
+    @pytest.fixture
+    def tabular_01_iterator(self, tabular_01_path):
+        return TabularDatasetBatchIterator(tabular_01_path, 2, (int, int, float), skip_lines=1)
+    
+    def test_context(self, tabular_01_iterator):
         """Check if the file is closed correcly after exiting context."""
-        ds = TabularDatasetBatchIterator(tabular_01_dataset, 2, (int, int, float), skip_lines=1)
-        assert ds._file is None
-        with ds:
-            fstream = ds._file
+        assert tabular_01_iterator._file is None
+        with tabular_01_iterator:
+            fstream = tabular_01_iterator._file
             assert fstream.readable()
         assert fstream.closed
     
-    def test_nested_contexts(self, tabular_01_dataset):
+    def test_nested_contexts(self, tabular_01_iterator):
         """Check nested contexts restriction."""
-        ds = TabularDatasetBatchIterator(tabular_01_dataset, 4, (int, int, float), skip_lines=1)
         with ExitStack() as stack:
             stack.enter_context(pytest.raises(RuntimeError))
-            stack.enter_context(ds)
-            stack.enter_context(ds)
+            stack.enter_context(tabular_01_iterator)
+            stack.enter_context(tabular_01_iterator)
     
     def test_batch_size(self):
         """Check the size of the batches."""
