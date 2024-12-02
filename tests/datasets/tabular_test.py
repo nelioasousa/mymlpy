@@ -51,9 +51,9 @@ class TestTabularDatasetBatchIterator:
         ds = TabularDatasetBatchIterator(tabular_01_path, batch_size, (int, float, int), skip_lines=1)
         with ds:
             sizes = [len(batch) for batch in ds]
-            for i, size in enumerate(sizes[:-1], start=1):
+            for i, size in enumerate(sizes[:-1]):
                 assert size == batch_size, f"Inconsistent size for batch #{i}: expecting {batch_size}, got {size}"
-            assert sizes[-1] <= batch_size, f"Inconsistent size for batch #{len(sizes)}: expecting <= {batch_size}, got {sizes[-1]}"
+            assert sizes[-1] <= batch_size, f"Inconsistent size for batch #{len(sizes) - 1}: expecting <= {batch_size}, got {sizes[-1]}"
     
     def test_expand_sequences(self, tabular_02_path):
         """Check if parsed sequences are expanded."""
