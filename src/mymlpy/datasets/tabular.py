@@ -119,6 +119,7 @@ class TabularDatasetBatchIterator:
     def goto(self, batch_index):
         self._assert_open_context()
         if batch_index < 0:
+            self._reset_iterator()
             return None
         self._next_batch_index = batch_index
         if not self._seek_batch_position(batch_index):
