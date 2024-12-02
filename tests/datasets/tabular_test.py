@@ -84,13 +84,23 @@ class TestTabularDatasetBatchIterator:
             stack.enter_context(pytest.raises(RuntimeError))
             _ = [batch for batch in ds]
     
-    def test_uninformed_advance(self):
+    def test_uninformed_advance(self, tabular_01_iterator):
         """Test `.advance()` feature without position information."""
-        pass
-
-    def test_informed_advance(self):
+        with tabular_01_iterator as ds:
+            batchs = [batch for batch in ds]
+            for i in range(len(batchs)):
+                ds.iter(clear_batch_positions=True)
+                batch = ds.advance(i+1)
+                assert batch == batchs[i]
+    
+    def test_informed_advance(self, tabular_01_iterator):
         """Test `.advance()` feature with position information."""
-        pass
+        with tabular_01_iterator as ds:
+            batchs = [batch for batch in ds]
+            for i in range(len(batchs)):
+                ds.iter(clear_batch_positions=False)
+                batch = ds.advance(i+1)
+                assert batch == batchs[i]
 
     def test_uninformed_retreat(self):
         """Test `.retreat()` feature without position information."""
