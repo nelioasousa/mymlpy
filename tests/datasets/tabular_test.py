@@ -55,7 +55,7 @@ class TestTabularDatasetBatchIterator:
             lines = ds_file.read().split('\n')[1:]
         targets = [l.split(',')[2].split('-') for l in lines if l]
         parser = (lambda x: x.split('-'))
-        ds = TabularDatasetBatchIterator(tabular_02_path, 1, (str, str, parser), skip_lines=1, expand_sequences=True)
+        ds = TabularDatasetBatchIterator(tabular_02_path, 1, (int, float, parser), skip_lines=1, expand_sequences=True)
         with ds:
             counter = 0
             for batch in ds:
