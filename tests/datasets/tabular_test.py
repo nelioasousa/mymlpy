@@ -45,15 +45,15 @@ class TestTabularDatasetBatchIterator:
             stack.enter_context(tabular_01_iterator)
             stack.enter_context(tabular_01_iterator)
     
-    @pytest.mark.parametrize("batch_size", [1, 2, 4, 8])
+    @pytest.mark.parametrize("batch_size", list(range(1, 9)))
     def test_batch_size(self, tabular_01_path, batch_size):
         """Check the size of the batches."""
         ds = TabularDatasetBatchIterator(tabular_01_path, batch_size, (int, float, int), skip_lines=1)
         with ds:
-            counter = 0
-            for batch in ds:
-                assert len(batch) == batch_size, f"Inconsistent size for batch #{counter}: expecting {batch_size}, got {len(batch)}"
-                counter += 1
+            sizes = [len(batch) for batch in ds]
+            for i, size in enumerate(sizes[:-1], start=1):
+                assert size == batch_size, f"Inconsistent size for batch #{i}: expecting {batch_size}, got {size}"
+            assert sizes[-1] <= batch_size, f"Inconsistent size for batch #{len(sizes)}: expecting <= {batch_size}, got {sizes[-1]}"
     
     def test_expand_sequences(self, tabular_02_path):
         """Check if parsed sequences are expanded."""
