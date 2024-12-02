@@ -101,14 +101,16 @@ class TestTabularDatasetBatchIterator:
                 ds.iter(clear_batch_positions=False)
                 batch = ds.advance(i+1)
                 assert batch == batchs[i]
-
-    def test_uninformed_retreat(self):
-        """Test `.retreat()` feature without position information."""
-        pass
-
-    def test_informed_retreat(self):
-        """Test `.retreat()` feature with position information."""
-        pass
+    
+    def test_retreat(self, tabular_01_iterator):
+        """Test `.retreat()` feature. Retreat always have position information available."""
+        with tabular_01_iterator as ds:
+            batchs = [batch for batch in ds]
+            for n in range(1, len(batchs) + 1):
+                batch = ds.retreat(n)
+                retreated_batchs = [] if batch is None else [batch]
+                retreated_batchs.extend([batch for batch in ds])
+                assert retreated_batchs == batchs[-(n+1):]
     
     def test_uninformed_goto(self):
         """Test `.goto()` feature without position information."""
