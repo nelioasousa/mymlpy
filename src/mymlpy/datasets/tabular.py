@@ -98,23 +98,23 @@ class TabularDatasetBatchIterator:
             return np.array(self._batch, dtype=dtype, copy=True)
         return None
     
-    def advance(self, num_batchs=1):
+    def advance(self, num_batches=1):
         self._assert_open_context()
-        if num_batchs < 1:
+        if num_batches < 1:
             return None
-        batch_index = self._next_batch_index - 1 + num_batchs
+        batch_index = self._next_batch_index - 1 + num_batches
         if self._seek_batch_position(batch_index):
             self._next_batch_index = batch_index
         else:
-            for _ in range(num_batchs - 1):
+            for _ in range(num_batches - 1):
                 next(self)
         return next(self)
     
-    def retreat(self, num_batchs=1):
+    def retreat(self, num_batches=1):
         self._assert_open_context()
-        if num_batchs < 1:
+        if num_batches < 1:
             return None
-        return self.goto(self._next_batch_index - 1 - num_batchs)
+        return self.goto(self._next_batch_index - 1 - num_batches)
     
     def goto(self, batch_index):
         self._assert_open_context()
