@@ -112,14 +112,27 @@ class TestTabularDatasetBatchIterator:
                 retreated_batchs.extend([batch for batch in ds])
                 assert retreated_batchs == batchs[-(n+1):]
     
-    def test_uninformed_goto(self):
+    def test_uninformed_goto(self, tabular_01_iterator):
         """Test `.goto()` feature without position information."""
-        pass
+        with tabular_01_iterator as ds:
+            batchs = list(ds)
+            for i in range(len(batchs)):
+                ds.iter(clear_batch_positions=True)
+                assert ds.goto(i) == batchs[i]
+            # Reset iterator with `goto()`
+            assert ds.goto(-1) is None
+            assert list(ds) == batchs
     
-    def test_informed_goto(self):
+    def test_informed_goto(self, tabular_01_iterator):
         """Test `.goto()` feature with position information."""
-        pass
-
+        with tabular_01_iterator as ds:
+            batchs = list(ds)
+            for i in range(len(batchs)):
+                assert ds.goto(i) == batchs[i]
+            # Reset iterator with `goto()`
+            assert ds.goto(-1) is None
+            assert list(ds) == batchs
+    
     def test_iter_with_batch_size(self):
         """Test `.iter_with_batch_size()` iteration mode."""
         pass
