@@ -21,6 +21,12 @@ class TestTabularDatasetBatchIterator:
             yield fpath
     
     @pytest.fixture
+    def tabular_03_path(self):
+        resource = resource_files('tests.datasets').joinpath('resources/tabular_03.txt')
+        with as_file(resource) as fpath:
+            yield fpath
+    
+    @pytest.fixture
     def tabular_01_iterator(self, tabular_01_path):
         return TabularDatasetBatchIterator(tabular_01_path, 2, (int, float, int), skip_lines=1)
     
@@ -64,9 +70,20 @@ class TestTabularDatasetBatchIterator:
                 assert target == result, f"Fail expansion at line #{counter}: expecting {target}, got {result}"
                 counter += 1
     
-    def test_ignore_errors(self):
+    def test_ignore_errors(self, tabular_03_path):
         """Test `ignore_errors` parameter."""
-
+        ds = TabularDatasetBatchIterator(tabular_03_path, 1, (int, str, float), ignore_errors=True)
+        with ExitStack() as stack:
+            stack.enter_context(ds)
+            batchs = [batch for batch in ds]
+            assert len(batchs) == 8
+            ds.iter(clear_batch_positions=True)
+            ds.ignore_errors = False
+            stack.enter_context(pytest.raises(ValueError))
+            _ = [batch for batch in ds]
+            stack.enter_context(pytest.raises(RuntimeError))
+            _ = [batch for batch in ds]
+    
     def test_uninformed_advance(self):
         """Test `.advance()` feature without position information."""
         pass
