@@ -133,6 +133,12 @@ class TestTabularDatasetBatchIterator:
             assert ds.goto(-1) is None
             assert list(ds) == batches
     
-    def test_iter_with_batch_size(self):
+    @pytest.mark.parametrize("batch_size", list(range(1, 9)))
+    def test_iter_with_batch_size(self, tabular_01_iterator, batch_size):
         """Test `.iter_with_batch_size()` iteration mode."""
-        pass
+        with tabular_01_iterator as ds:
+            ds.iter_with_batch_size(batch_size)
+            sizes = [len(batch) for batch in ds]
+            for i, size in enumerate(sizes[:-1]):
+                assert size == batch_size, f"Inconsistent size for batch #{i}: expecting {batch_size}, got {size}"
+            assert sizes[-1] <= batch_size, f"Inconsistent size for batch #{len(sizes) - 1}: expecting <= {batch_size}, got {sizes[-1]}"
