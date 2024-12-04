@@ -33,7 +33,7 @@ class TestTabularDatasetBatchIterator:
         )
 
     def test_context(self, tabular_01_iterator):
-        """Check if the file is closed correcly after exiting context."""
+        """Check if the file is closed properly after exiting context."""
         assert tabular_01_iterator._file is None
         with tabular_01_iterator:
             fstream = tabular_01_iterator._file
@@ -49,7 +49,7 @@ class TestTabularDatasetBatchIterator:
 
     @pytest.mark.parametrize("batch_size", list(range(1, 9)))
     def test_batch_size(self, tabular_01_path, batch_size):
-        """Check the size of the batches."""
+        """Check batch size."""
         ds = TabularDatasetBatchIterator(
             tabular_01_path, batch_size, (int, float, int), skip_lines=1
         )
@@ -64,7 +64,7 @@ class TestTabularDatasetBatchIterator:
             ), f"Inconsistent size for batch #{len(sizes) - 1}: expecting <= {batch_size}, got {sizes[-1]}"
 
     def test_expand_sequences(self, tabular_02_path):
-        """Check if parsed sequences are expanded."""
+        """Check sequence expansion."""
         with open(tabular_02_path, "r") as ds_file:
             lines = ds_file.read().split("\n")[1:]
         targets = [l.split(",")[2].split("-") for l in lines if l]
@@ -99,7 +99,7 @@ class TestTabularDatasetBatchIterator:
             _ = [batch for batch in ds]
 
     def test_uninformed_advance(self, tabular_01_iterator):
-        """Test `.advance()` feature without position information."""
+        """Test `advance()` method without batch position information."""
         with tabular_01_iterator as ds:
             batches = list(ds)
             for i in range(len(batches)):
@@ -108,7 +108,7 @@ class TestTabularDatasetBatchIterator:
                 assert batch == batches[i]
 
     def test_informed_advance(self, tabular_01_iterator):
-        """Test `.advance()` feature with position information."""
+        """Test `advance()` method with batch position information."""
         with tabular_01_iterator as ds:
             batches = list(ds)
             for i in range(len(batches)):
@@ -117,7 +117,7 @@ class TestTabularDatasetBatchIterator:
                 assert batch == batches[i]
 
     def test_retreat(self, tabular_01_iterator):
-        """Test `.retreat()` feature. Retreat always have position information available."""
+        """Test `retreat()` method."""
         with tabular_01_iterator as ds:
             batches = list(ds)
             for n in range(1, len(batches) + 1):
@@ -127,7 +127,7 @@ class TestTabularDatasetBatchIterator:
                 assert retreated_batches == batches[-(n + 1) :]
 
     def test_uninformed_goto(self, tabular_01_iterator):
-        """Test `.goto()` feature without position information."""
+        """Test `goto()` method without batch position information"""
         with tabular_01_iterator as ds:
             batches = list(ds)
             for i in range(len(batches)):
@@ -138,7 +138,7 @@ class TestTabularDatasetBatchIterator:
             assert list(ds) == batches
 
     def test_informed_goto(self, tabular_01_iterator):
-        """Test `.goto()` feature with position information."""
+        """Test `goto()` method with batch position information."""
         with tabular_01_iterator as ds:
             batches = list(ds)
             for i in range(len(batches)):
@@ -149,7 +149,7 @@ class TestTabularDatasetBatchIterator:
 
     @pytest.mark.parametrize("batch_size", list(range(1, 9)))
     def test_iter_with_batch_size(self, tabular_01_iterator, batch_size):
-        """Test `.iter_with_batch_size()` iteration mode."""
+        """Test `iter_with_batch_size()` iteration mode."""
         with tabular_01_iterator as ds:
             ds.iter_with_batch_size(batch_size)
             sizes = [len(batch) for batch in ds]

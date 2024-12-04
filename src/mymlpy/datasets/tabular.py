@@ -14,6 +14,35 @@ class TabularDatasetBatchIterator:
         expand_sequences=False,
         ignore_errors=False,
     ):
+        """
+        Provides batch iteration functionality for tabular datasets.
+
+        Designed for handling out-of-memory datasets and raw datasets that cannot be
+        directly converted to homogeneous NumPy arrays. Supports flexible iteration,
+        including forward and backward traversal, and stores file positions of batches
+        to enable faster access during subsequent iterations.
+
+        `file_path` - Path-like object giving the dataset location in the file system.
+
+        `batch_size` - Batch size.
+
+        `parsers` - Sequence of parsers for each dataset column. A parser is simply a
+        callable that accepts only one positional argument of type string. If the
+        argument can't be understood or isn't a string, `ValueError` must be raised.
+
+        `separator` - String that separates each column in a row/line of data.
+
+        `skip_lines` - Skip the first n lines of the dataset file.
+
+        `expand_sequences` - If set to True, any sequence outputted by a parser (other
+        than a string or a bytes object) is expanded/unfolded. No dimension consistency
+        check is performed after expansion. When `expand_sequences` is True, the size of
+        each entry in a batch or between batches may vary depending on the parsers
+        provided.
+
+        `ignore_errors` - Skip lines that are inconsistent with the number of parsers or
+        raises `ValueError` during parsing.
+        """
         self.file_path = Path(file_path).resolve()
         self.batch_size = batch_size
         self.separator = separator
@@ -46,12 +75,20 @@ class TabularDatasetBatchIterator:
         return self
 
     def iter_with_batch_size(self, batch_size):
+        """Reset the iterator with a different batch size.
+
+        Position information is discarded even when the batch_size remains unchanged.
+        """
         self._assert_open_context()
         self.batch_size = batch_size
         self._reset_iterator(clear_batch_positions=True)
         return self
 
     def iter(self, clear_batch_positions=False):
+        """Reset the iterator to the beginning of the dataset.
+
+        Position information is discarded if `clear_batch_positions` is True.
+        """
         self._assert_open_context()
         self._reset_iterator(clear_batch_positions=clear_batch_positions)
         return self
@@ -103,14 +140,23 @@ class TabularDatasetBatchIterator:
         return batch
 
     def get_batch(self):
+        """Return the last outputted batch."""
         return self._batch
 
     def to_numpy(self, dtype):
+        """Return the last outputted batch as a numpy array."""
         if self._batch is not None:
             return np.array(self._batch, dtype=dtype, copy=True)
         return None
 
     def advance(self, num_batches=1):
+        """Advance `num_batches` from the actual batch.
+
+        The batch landed at is returned. Non-positive `num_batches` is a no-op and
+        returns `None`.
+
+        Raises `StopIteration`.
+        """
         self._assert_open_context()
         if num_batches < 1:
             return None
@@ -123,12 +169,24 @@ class TabularDatasetBatchIterator:
         return next(self)
 
     def retreat(self, num_batches=1):
+        """Advance `num_batches` from the actual batch.
+
+        The batch landed at is returned. `retreat()` doesn't wrap around. If a large
+        enough value is supplied by `num_batches`, the iteartor is reseted and `None`
+        is returned. Non-positive `num_batches` is a no-op and returns `None`.
+        """
         self._assert_open_context()
         if num_batches < 1:
             return None
         return self.goto(self._next_batch_index - 1 - num_batches)
 
     def goto(self, batch_index):
+        """Go to any batch based on it's index and return it.
+
+        Negative `batch_index` is equivalent to a call to `self.iter()`.
+
+        Raises `StopIteration`.
+        """
         self._assert_open_context()
         if batch_index < 0:
             self._reset_iterator()
