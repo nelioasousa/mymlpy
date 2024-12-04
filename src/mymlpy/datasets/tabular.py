@@ -27,7 +27,7 @@ class TabularDatasetBatchIterator:
         self._file = self.file_path.open("r")
         try:
             self._reset_iterator(clear_batch_positions=True)
-        except Exception:
+        except:
             self._file.close()
             raise
         return self
@@ -69,17 +69,20 @@ class TabularDatasetBatchIterator:
                     %(len(self.parsers), len(elements))
                 )
             entry = []
-            try:
-                for i, element in enumerate(elements):
+            for i, element in enumerate(elements):
+                try:
                     element = self.parsers[i](element)
-                    if isinstance(element, Sequence) and not isinstance(element, (str, bytes)) and self.expand_sequences:
-                        entry.extend(element)
-                    else:
-                        entry.append(element)
-            except ValueError:
-                if self.ignore_errors:
-                    continue
-                raise
+                except ValueError:
+                    if self.ignore_errors:
+                        entry = None
+                        break
+                    raise
+                if isinstance(element, Sequence) and not isinstance(element, (str, bytes)) and self.expand_sequences:
+                    entry.extend(element)
+                else:
+                    entry.append(element)
+            if entry is None:
+                continue
             batch.append(entry)
             if len(batch) == 1:
                 batch_position = entry_position
