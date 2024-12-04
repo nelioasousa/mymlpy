@@ -35,3 +35,9 @@ namespaces = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 90
+
+[tool.ruff.lint]
+ignore = ["E731", "E741", "E742", "E743"]
