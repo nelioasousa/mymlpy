@@ -10,19 +10,25 @@ from contextlib import ExitStack
 class TestTabularDatasetBatchIterator:
     @pytest.fixture
     def tabular_01_path(self):
-        resource = resource_files("tests.datasets").joinpath("resources/tabular_01.txt")
+        resource = resource_files("tests.datasets.tabular").joinpath(
+            "resources/tabular_01.txt"
+        )
         with as_file(resource) as fpath:
             yield fpath
 
     @pytest.fixture
     def tabular_02_path(self):
-        resource = resource_files("tests.datasets").joinpath("resources/tabular_02.txt")
+        resource = resource_files("tests.datasets.tabular").joinpath(
+            "resources/tabular_02.txt"
+        )
         with as_file(resource) as fpath:
             yield fpath
 
     @pytest.fixture
     def tabular_03_path(self):
-        resource = resource_files("tests.datasets").joinpath("resources/tabular_03.txt")
+        resource = resource_files("tests.datasets.tabular").joinpath(
+            "resources/tabular_03.txt"
+        )
         with as_file(resource) as fpath:
             yield fpath
 
