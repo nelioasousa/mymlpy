@@ -1,5 +1,4 @@
 import numpy as np
-from math import isclose
 
 
 def _check_proportions(target_size, proportions):
@@ -8,22 +7,29 @@ def _check_proportions(target_size, proportions):
     if min(proportions) < 0.0:
         raise ValueError("`proportions` must contain only non-negative values")
     total = sum(proportions)
-    if total > 1.0 and not isclose(total, 1.0):
-        return ValueError("`proportions` sum to more than 1.0")
-    remains = (1.0 - total) * target_size
-    if remains >= 1.0:
+    # Floating-point imprecision is not considered
+    # Can generate bugs but will be easy to undertand
+    if total > 1.0:
+        raise ValueError("`proportions` sum to more than 1.0")
+    # Proportions that result in values close to 1 are unsafe
+    if (1.0 - total) * target_size >= 1.0:
         return tuple(proportions) + (1.0 - total,)
     return tuple(proportions)
 
 
 def _process_proportions(target_size, proportions):
-    fsizes = [(target_size * p) for p in proportions]
-    sizes = [int(s) for s in fsizes]
+    float_sizes = [(target_size * p) for p in proportions]
+    sizes = [int(size) for size in float_sizes]
     distribute = target_size - sum(sizes)
     if not distribute:
         return tuple(sizes)
-    indexed_fracs = [(i, fsize % 1) for i, fsize in enumerate(fsizes)]
-    indexed_fracs.sort(key=(lambda x: x[1]), reverse=True)
+    indexed_fracs = [(i, fsize - sizes[i]) for i, fsize in enumerate(float_sizes)]
+    indexed_fracs.sort(key=(lambda x: x[1]))
+    if distribute < 0:
+        for i in range(abs(distribute)):
+            sizes[indexed_fracs[i][0]] -= 1
+        return tuple(sizes)
+    indexed_fracs.reverse()
     for i in range(distribute):
         sizes[indexed_fracs[i][0]] += 1
     return tuple(sizes)
