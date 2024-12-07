@@ -57,7 +57,7 @@ def split_data(data_array, proportions, shuffle=True, categorizer=None, copy=Fal
         sizes = _process_proportions(len(category_idxs), proportions)
         start = 0
         for i, size in enumerate(sizes):
-            splits_idxs[i].append(category_idxs[start : start + size])
+            splits_idxs[i].extend(category_idxs[start : start + size])
             start += size
     splits = tuple(data_array[sorted(idxs)] for idxs in splits_idxs)
     if copy:
