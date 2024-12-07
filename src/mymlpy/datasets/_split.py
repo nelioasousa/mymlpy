@@ -36,6 +36,24 @@ def _process_proportions(target_size, proportions):
 
 
 def split_data(data_array, proportions, shuffle=True, categorizer=None, copy=False):
+    """Split array based on proportions.
+
+    `data_array` - `numpy.ndarray` to split. Can't be an empty array.
+
+    `proportions` - Proportions for each split set. If the proportions sum to less than
+    1.0, the last proportion is inferred to make the total equal to 1.0. If the
+    proportions exceed 1.0, a `ValueError` is raised.
+
+    `shuffle` - Whether to shuffle `data_array` in-place before splitting.
+
+    `categorizer` - A callable that returns a unique hashable object for each category in
+    `data_array`. It receives each entry in `data_array` (one dimension lest than
+    `data_array`) as an argument and must return a hashable value representing the
+    entry's category.
+
+    `copy` - Whether to return the splits as copies. If `shuffle` is True, `data_array`
+    is shuffled in place regardless of the value of `copy`.
+    """
     proportions = _check_proportions(data_array.shape[0], proportions)
     if shuffle:
         np.random.shuffle(data_array)

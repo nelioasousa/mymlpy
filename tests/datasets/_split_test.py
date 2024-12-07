@@ -10,6 +10,7 @@ def random_array():
 
 
 def test_split_data_empty():
+    """Test empty array spliting."""
     with pytest.raises(ValueError):
         split_data(np.empty((0, 4)), (0.3, 0.7))
 
@@ -24,11 +25,13 @@ def test_split_data_empty():
     ),
 )
 def test_split_data_bad_proportions(random_array, bad_proportions):
+    """Test invalid proportions."""
     with pytest.raises(ValueError):
         split_data(random_array, bad_proportions)
 
 
 def test_split_data_shuffle(random_array):
+    """Verify shuffling."""
     arr_copy = np.copy(random_array)
     split_data(random_array, (0.3, 0.7))
     assert not np.array_equal(random_array, arr_copy)
@@ -44,6 +47,7 @@ def test_split_data_shuffle(random_array):
     ),
 )
 def test_split_data(dim, sizes):
+    """Test array splitting with complete proportions."""
     proportions = tuple(size / dim for size in sizes)
     splits = split_data(np.random.randn(dim, 4), proportions)
     for size, split in zip(sizes, splits):
@@ -61,6 +65,7 @@ def test_split_data(dim, sizes):
     ),
 )
 def test_split_data_incomplete(dim, sizes):
+    """Test array splitting with incomplete proportions."""
     proportions = tuple(size / dim for size in sizes)
     splits = split_data(np.random.randn(dim, 5), proportions)
     sizes += (dim - sum(sizes),)
@@ -70,6 +75,7 @@ def test_split_data_incomplete(dim, sizes):
 
 
 def test_split_data_categorizer():
+    """Test stratified splitting."""
     dim_ctg1 = 10000
     dim_ctg2 = 50000
     dim = dim_ctg1 + dim_ctg2
