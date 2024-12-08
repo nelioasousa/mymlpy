@@ -1,12 +1,28 @@
 import pytest
 import numpy as np
 
-from mymlpy.datasets import split_data
+from mymlpy.datasets import split_data, KFold
 
 
 @pytest.fixture
 def random_array():
     return np.random.randn(np.random.randint(500, 1001), np.random.randint(2, 6))
+
+
+@pytest.fixture
+def random_stratified_array():
+    num_cols = 4
+    size_ctg1 = np.random.randint(2000, 3001)
+    size_ctg2 = np.random.randint(3000, 5001)
+    rng_ctg1 = (0, 2)
+    rng_ctg2 = (2, 4)
+    categorizer = lambda x: bool(x.max() < 2)
+    data_ctg1 = np.random.randint(*rng_ctg1, (size_ctg1, num_cols))
+    data = np.empty((size_ctg1 + size_ctg2, num_cols), dtype=data_ctg1.dtype)
+    data[:size_ctg1] = data_ctg1
+    data[size_ctg1:] = np.random.randint(*rng_ctg2, (size_ctg2, num_cols))
+    np.random.shuffle(data)
+    return (size_ctg1, size_ctg2), categorizer, data
 
 
 def test_split_data_empty():
@@ -93,3 +109,60 @@ def test_split_data_categorizer():
         count_ctg1 = sum(categorizer(entry) for entry in split)
         count_ctg2 = split.shape[0] - count_ctg1
         assert (count_ctg1, count_ctg2) == (sizes_ctg1[i], sizes_ctg2[i])
+
+
+@pytest.mark.parametrize("k", [-1, 0, 1])
+def test_kfold_invalid_k(random_array, k):
+    with pytest.raises(ValueError):
+        _ = KFold(random_array, k)
+
+
+def test_kfold_not_enough_entries():
+    data_size = 5
+    offset = 1
+    num_cols = 4
+    data_array = np.random.randn(data_size, num_cols)
+    with pytest.raises(ValueError):
+        _ = KFold(data_array, data_size + offset)
+
+
+@pytest.mark.parametrize("k", tuple(range(2, 5)))
+@pytest.mark.parametrize("shuffle", (False, True))
+def test_kfold_common(random_array, k, shuffle):
+    min_size = random_array.shape[0] // k
+    diff = random_array.shape[0] - (k * min_size)
+    folds = KFold(random_array, k, shuffle, copy=True)
+    verify = np.empty((0, random_array.shape[1]), dtype=random_array.dtype)
+    for train, test in folds:
+        assert test.shape[0] == (min_size + (diff > 0))
+        assert (test.shape[0] + train.shape[0]) == random_array.shape[0]
+        diff -= 1
+        verify = np.concatenate((verify, test))
+    assert np.array_equal(random_array, verify)
+
+
+@pytest.mark.parametrize("k", tuple(range(2, 5)))
+@pytest.mark.parametrize("shuffle", (False, True))
+def test_kfold_stratified(random_stratified_array, k, shuffle):
+    sizes, categorizer, data = random_stratified_array
+    min_size_ctg1 = sizes[0] // k
+    min_size_ctg2 = sizes[1] // k
+    diff_ctg1 = sizes[0] - (k * min_size_ctg1)
+    diff_ctg2 = sizes[1] - (k * min_size_ctg2)
+    verify_ctg1 = np.empty((0, data.shape[1]), dtype=data.dtype)
+    verify_ctg2 = np.empty((0, data.shape[1]), dtype=data.dtype)
+    folds = KFold(data, k, shuffle, categorizer, copy=True)
+    for train, test in folds:
+        test_ctg1_idxs = np.array([categorizer(entry) for entry in test], dtype=np.bool_)
+        test_ctg1_size = test_ctg1_idxs.sum()
+        test_ctg2_size = test.shape[0] - test_ctg1_size
+        assert test_ctg1_size == (min_size_ctg1 + (diff_ctg1 > 0))
+        assert test_ctg2_size == (min_size_ctg2 + (diff_ctg2 > 0))
+        assert (test.shape[0] + train.shape[0]) == data.shape[0]
+        diff_ctg1 -= 1
+        diff_ctg2 -= 1
+        verify_ctg1 = np.concatenate((verify_ctg1, test[test_ctg1_idxs]))
+        verify_ctg2 = np.concatenate((verify_ctg2, test[~test_ctg1_idxs]))
+    ctg1_idxs = np.array([categorizer(entry) for entry in data], dtype=np.bool_)
+    assert np.array_equal(data[ctg1_idxs], verify_ctg1)
+    assert np.array_equal(data[~ctg1_idxs], verify_ctg2)
