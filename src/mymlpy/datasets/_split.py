@@ -84,17 +84,86 @@ def split_data(data_array, proportions, shuffle=True, categorizer=None, copy=Fal
 
 
 class KFold:
-    def __init__(self, data_array, k, shuffle=True, categorizer=None):
-        return
+    def __init__(self, data_array, k, shuffle=False, categorizer=None, copy=False):
+        if k < 2:
+            raise ValueError("Minimum of k=2 folds.")
+        self._k = k
+        self._shuffle = shuffle
+        self._categorizer = categorizer
+        self._next = 0
+        self._copy = copy
+        self._data = None
+        self._folds = None
+        self.set_data_array(data_array)
+
+    def _fold_common(self):
+        min_size = self._data.shape[0] // self._k
+        remainder = self._data.shape[0] - (self._k * min_size)
+        folds = []
+        start = 0
+        for _ in range(self._k):
+            rng = (start, start + min_size + (remainder > 0))
+            folds.append(rng)
+            remainder -= 1
+            start = rng[1]
+        self._folds = folds
+
+    def _fold_stratified(self):
+        categories = {}
+        for idx, entry in enumerate(self._data):
+            categories.setdefault(self._categorizer(entry), list()).append(idx)
+        folds = [list() for _ in range(self._k)]
+        for category_idxs in categories.values():
+            min_size = len(category_idxs) // self._k
+            remainder = len(category_idxs) - (self._k * min_size)
+            start = 0
+            for i in range(self._k):
+                end = start + min_size + (remainder > 0)
+                folds[i].extend(category_idxs[start:end])
+                remainder -= 1
+                start = end
+        self._folds = folds
 
     def __iter__(self):
+        self._next = 0
         return self
 
     def __next__(self):
-        return
+        if self._next >= self._k:
+            raise StopIteration("Exhausted iterator.")
+        split = self.get_split(self._next)
+        self._next += 1
+        return split
+
+    def get_split(self, split_index):
+        test_idxs = self._folds[split_index]
+        if self._categorizer is None:
+            test_idxs = slice(*test_idxs)
+        train_idxs = np.ones(self._data.shape[0], dtype=np.bool_)
+        train_idxs[test_idxs] = 0
+        test = self._data[test_idxs]
+        train = self._data[train_idxs]
+        if self._copy:
+            return np.copy(train), np.copy(test)
+        return train, test
 
     def get_fold(self, fold_index):
-        return
+        fold_idxs = self._folds[fold_index]
+        if self._categorizer is None:
+            fold_idxs = slice(*fold_idxs)
+        fold = self._data[fold_idxs]
+        if self._copy:
+            return np.copy(fold)
+        return fold
 
-    def refold(self, shuffle=True):
-        return
+    def set_data_array(self, data_array):
+        if data_array.shape[0] < self._k:
+            raise ValueError(f"`data_array` must have at least k={self._k} entries.")
+        self._data = data_array
+        self._next = 0
+        if self._shuffle:
+            np.random.shuffle(self._data)
+        if self._categorizer is None:
+            self._fold_common()
+        else:
+            self._fold_stratified()
