@@ -92,13 +92,14 @@ def test_split_data_incomplete(dim, sizes):
 
 def test_split_data_categorizer():
     """Test stratified splitting."""
-    dim_ctg1 = 10000
-    dim_ctg2 = 50000
+    num_cols = 4
+    dim_ctg1 = 2000
+    dim_ctg2 = 5000
     dim = dim_ctg1 + dim_ctg2
-    data_ctg1 = np.random.randint(0, 2, (dim_ctg1, 4), dtype=np.int64)
-    data_ctg2 = np.random.randint(2, 4, (dim_ctg2, 4), dtype=np.int64)
-    data = np.empty((dim, 4), dtype=np.int64)
-    np.concatenate((data_ctg1, data_ctg2), axis=0, out=data)
+    data_ctg1 = np.random.randint(0, 2, (dim_ctg1, num_cols))
+    data_ctg2 = np.random.randint(2, 4, (dim_ctg2, num_cols))
+    data = np.empty((dim, num_cols), dtype=data_ctg1.dtype)
+    np.concatenate((data_ctg1, data_ctg2), out=data)
     np.random.shuffle(data)
     categorizer = lambda x: bool(x.max() < 2)
     proportions = (0.1, 0.2, 0.3, 0.4)
@@ -108,7 +109,8 @@ def test_split_data_categorizer():
     for i, split in enumerate(splits):
         count_ctg1 = sum(categorizer(entry) for entry in split)
         count_ctg2 = split.shape[0] - count_ctg1
-        assert (count_ctg1, count_ctg2) == (sizes_ctg1[i], sizes_ctg2[i])
+        assert count_ctg1 == sizes_ctg1[i]
+        assert count_ctg2 == sizes_ctg2[i]
 
 
 @pytest.mark.parametrize("k", [-1, 0, 1])
