@@ -12,17 +12,19 @@ def random_array():
 @pytest.fixture
 def random_stratified_array():
     num_cols = 4
-    size_ctg1 = np.random.randint(2000, 3001)
-    size_ctg2 = np.random.randint(3000, 5001)
-    rng_ctg1 = (0, 2)
-    rng_ctg2 = (2, 4)
-    categorizer = lambda x: bool(x.max() < 2)
-    data_ctg1 = np.random.randint(*rng_ctg1, (size_ctg1, num_cols))
-    data = np.empty((size_ctg1 + size_ctg2, num_cols), dtype=data_ctg1.dtype)
-    data[:size_ctg1] = data_ctg1
-    data[size_ctg1:] = np.random.randint(*rng_ctg2, (size_ctg2, num_cols))
+    num_categories = np.random.randint(2, 5)
+    sizes = tuple(np.random.randint(2, 2001) for _ in range(num_categories))
+    data = np.empty((sum(sizes), num_cols), dtype=np.uint8)
+    start = 0
+    for i, size in enumerate(sizes):
+        end = start + size
+        data[start:end] = np.random.randint(
+            i * 2, (i + 1) * 2, (size, num_cols), dtype=np.uint8
+        )
+        start = end
+    categorizer = lambda x: x[0] // 2
     np.random.shuffle(data)
-    return (size_ctg1, size_ctg2), categorizer, data
+    return sizes, categorizer, data
 
 
 def test_split_data_empty():
@@ -90,27 +92,59 @@ def test_split_data_incomplete(dim, sizes):
         assert split.shape[0] == size
 
 
-def test_split_data_categorizer():
+@pytest.mark.parametrize("shuffle", (False, True))
+@pytest.mark.parametrize(
+    "proportions", ((0.15, 0.35, 0.5), (0.13, 0.17, 0.70), (0.02, 0.03, 0.05, 0.9))
+)
+def test_split_data_categorizer(random_stratified_array, proportions, shuffle):
     """Test stratified splitting."""
-    num_cols = 4
-    dim_ctg1 = 2000
-    dim_ctg2 = 5000
-    dim = dim_ctg1 + dim_ctg2
-    data_ctg1 = np.random.randint(0, 2, (dim_ctg1, num_cols))
-    data_ctg2 = np.random.randint(2, 4, (dim_ctg2, num_cols))
-    data = np.empty((dim, num_cols), dtype=data_ctg1.dtype)
-    np.concatenate((data_ctg1, data_ctg2), out=data)
-    np.random.shuffle(data)
-    categorizer = lambda x: bool(x.max() < 2)
-    proportions = (0.1, 0.2, 0.3, 0.4)
-    sizes_ctg1 = tuple(round(dim_ctg1 * p) for p in proportions)
-    sizes_ctg2 = tuple(round(dim_ctg2 * p) for p in proportions)
-    splits = split_data(data, proportions, categorizer=categorizer)
+    category_sizes, categorizer, data = random_stratified_array
+    # Calculate the number of entries in each split for each category
+    # Each category is represented as an index in the `categories_split_sizes` list
+    categories_split_sizes = []
+    for category_size in category_sizes:
+        float_split_sizes = [category_size * p for p in proportions]
+        split_sizes = [int(s) for s in float_split_sizes]
+        distribute = category_size - sum(split_sizes)
+        indexed_fracs = [(i, s - split_sizes[i]) for i, s in enumerate(float_split_sizes)]
+        indexed_fracs.sort(key=(lambda x: x[1]), reverse=(distribute > 0))
+        increment = 1 if distribute > 0 else -1
+        for i in range(abs(distribute)):
+            split_sizes[indexed_fracs[i][0]] += increment
+        categories_split_sizes.append(split_sizes)
+    # Stratified split of `data`
+    splits = split_data(data, proportions, shuffle=shuffle, categorizer=categorizer)
+    # Store the `data` entries by category
+    data_categories = [
+        np.empty((size, data.shape[1]), dtype=data.dtype) for size in category_sizes
+    ]
+    start_points = [0] * len(category_sizes)
     for i, split in enumerate(splits):
-        count_ctg1 = sum(categorizer(entry) for entry in split)
-        count_ctg2 = split.shape[0] - count_ctg1
-        assert count_ctg1 == sizes_ctg1[i]
-        assert count_ctg2 == sizes_ctg2[i]
+        # Segment each split based on the categories
+        category_markers = np.array([categorizer(entry) for entry in split])
+        ctg_unique, ctg_count = np.unique(category_markers, return_counts=True)
+        # Check the number of entries in each category agains `categories_split_sizes`
+        for ctg in range(len(category_sizes)):
+            try:
+                # np.where is ugly, see docs if you don't understand
+                count = ctg_count[np.where(ctg_unique == ctg)[0][0]]
+            except IndexError:
+                count = 0
+            assert (
+                categories_split_sizes[ctg][i] == count
+            ), f"Failed at split-{i} category-{ctg}"
+            # Extract and store the entries from `ctg` category
+            ctg_mask = category_markers == ctg
+            start = start_points[ctg]
+            end = start + count
+            data_categories[ctg][start:end] = split[ctg_mask]
+            start_points[ctg] = end
+    # Remount `data` using `data_categories` and compare
+    category_markers = np.array([categorizer(entry) for entry in data])
+    data_organized = data[np.argsort(category_markers, stable=True)]
+    assert np.array_equal(
+        data_organized, np.concatenate(data_categories)
+    ), "Failed to remount data from splits"
 
 
 @pytest.mark.parametrize("k", [-1, 0, 1])
@@ -145,26 +179,48 @@ def test_kfold_common(random_array, k, shuffle):
 
 @pytest.mark.parametrize("k", tuple(range(2, 5)))
 @pytest.mark.parametrize("shuffle", (False, True))
-def test_kfold_stratified(random_stratified_array, k, shuffle):
-    sizes, categorizer, data = random_stratified_array
-    min_size_ctg1 = sizes[0] // k
-    min_size_ctg2 = sizes[1] // k
-    diff_ctg1 = sizes[0] - (k * min_size_ctg1)
-    diff_ctg2 = sizes[1] - (k * min_size_ctg2)
-    verify_ctg1 = np.empty((0, data.shape[1]), dtype=data.dtype)
-    verify_ctg2 = np.empty((0, data.shape[1]), dtype=data.dtype)
+def test_kfold_stratified(random_stratified_array, shuffle, k):
+    category_sizes, categorizer, data = random_stratified_array
+    # Calculate the number of entries in each fold for each category
+    min_sizes = []
+    diffs = []
+    for size in category_sizes:
+        min_size = size // k
+        min_sizes.append(min_size)
+        diffs.append(size - (k * min_size))
+    # K-fold split
     folds = KFold(data, k, shuffle, categorizer, copy=True)
-    for train, test in folds:
-        test_ctg1_idxs = np.array([categorizer(entry) for entry in test], dtype=np.bool_)
-        test_ctg1_size = test_ctg1_idxs.sum()
-        test_ctg2_size = test.shape[0] - test_ctg1_size
-        assert test_ctg1_size == (min_size_ctg1 + (diff_ctg1 > 0))
-        assert test_ctg2_size == (min_size_ctg2 + (diff_ctg2 > 0))
-        assert (test.shape[0] + train.shape[0]) == data.shape[0]
-        diff_ctg1 -= 1
-        diff_ctg2 -= 1
-        verify_ctg1 = np.concatenate((verify_ctg1, test[test_ctg1_idxs]))
-        verify_ctg2 = np.concatenate((verify_ctg2, test[~test_ctg1_idxs]))
-    ctg1_idxs = np.array([categorizer(entry) for entry in data], dtype=np.bool_)
-    assert np.array_equal(data[ctg1_idxs], verify_ctg1)
-    assert np.array_equal(data[~ctg1_idxs], verify_ctg2)
+    # Store the `data` entries by category
+    data_categories = tuple(
+        np.empty((size, data.shape[1]), dtype=data.dtype) for size in category_sizes
+    )
+    start_points = [0] * len(category_sizes)
+    for i, (train, test) in enumerate(folds):
+        assert data.shape[0] == (
+            train.shape[0] + test.shape[0]
+        ), f"Inconsistency at split-{i}"
+        # Test fold integrity
+        category_markers = np.array([categorizer(entry) for entry in test])
+        ctg_unique, ctg_count = np.unique(category_markers, return_counts=True)
+        for ctg in range(len(category_sizes)):
+            try:
+                # np.where is ugly, see docs if you don't understand
+                count = ctg_count[np.where(ctg_unique == ctg)[0][0]]
+            except IndexError:
+                count = 0
+            assert count == (
+                min_sizes[ctg] + (diffs[ctg] > 0)
+            ), f"Failed at fold-{i} category-{ctg}"
+            diffs[ctg] -= 1
+            # Extract and store the entries from `ctg` category
+            ctg_mask = category_markers == ctg
+            start = start_points[ctg]
+            end = start + count
+            data_categories[ctg][start:end] = test[ctg_mask]
+            start_points[ctg] = end
+    # Remount `data` using `data_categories` and compare
+    category_markers = np.array([categorizer(entry) for entry in data])
+    data_organized = data[np.argsort(category_markers, stable=True)]
+    assert np.array_equal(
+        data_organized, np.concatenate(data_categories)
+    ), "Failed to remount data from splits"
