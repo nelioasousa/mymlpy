@@ -24,14 +24,10 @@ def _process_proportions(target_size, proportions):
     if not distribute:
         return tuple(sizes)
     indexed_fracs = [(i, fsize - sizes[i]) for i, fsize in enumerate(float_sizes)]
-    indexed_fracs.sort(key=(lambda x: x[1]))
-    if distribute < 0:
-        for i in range(abs(distribute)):
-            sizes[indexed_fracs[i][0]] -= 1
-        return tuple(sizes)
-    indexed_fracs.reverse()
-    for i in range(distribute):
-        sizes[indexed_fracs[i][0]] += 1
+    indexed_fracs.sort(key=(lambda x: x[1]), reverse=(distribute > 0))
+    diff = 1 if distribute > 0 else -1
+    for i in range(abs(distribute)):
+        sizes[indexed_fracs[i][0]] += diff
     return tuple(sizes)
 
 
