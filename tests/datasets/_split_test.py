@@ -29,8 +29,10 @@ def random_stratified_array():
 
 def test_split_data_empty():
     """Test empty array spliting."""
+    num_cols = 4
+    proportions = (0.3, 0.7)
     with pytest.raises(ValueError):
-        split_data(np.empty((0, 4)), (0.3, 0.7))
+        split_data(np.empty((0, num_cols)), proportions)
 
 
 @pytest.mark.parametrize(
@@ -50,24 +52,26 @@ def test_split_data_bad_proportions(random_array, bad_proportions):
 
 def test_split_data_shuffle(random_array):
     """Verify shuffling."""
+    proportions = (0.3, 0.7)
     arr_copy = np.copy(random_array)
-    split_data(random_array, (0.3, 0.7))
+    split_data(random_array, proportions)
     assert not np.array_equal(random_array, arr_copy)
 
 
 @pytest.mark.parametrize(
     "dim,sizes",
     (
-        pytest.param(150, (15, 35, 40, 60), id="3"),
-        pytest.param(500, (25, 75, 150, 250), id="2"),
-        pytest.param(1000, (100, 200, 700), id="0"),
-        pytest.param(10000, (2000, 3000, 5000), id="1"),
+        (150, (15, 35, 40, 60)),
+        (500, (25, 75, 150, 250)),
+        (1000, (100, 200, 700)),
+        (10000, (2000, 3000, 5000)),
     ),
 )
 def test_split_data(dim, sizes):
     """Test array splitting with complete proportions."""
+    num_cols = 4
     proportions = tuple(size / dim for size in sizes)
-    splits = split_data(np.random.randn(dim, 4), proportions)
+    splits = split_data(np.random.randn(dim, num_cols), proportions)
     for size, split in zip(sizes, splits):
         assert split.shape[0] == size
 
@@ -75,17 +79,18 @@ def test_split_data(dim, sizes):
 @pytest.mark.parametrize(
     "dim,sizes",
     (
-        pytest.param(130, (5, 15, 15, 70), id="0"),
-        pytest.param(235, (10, 25, 70), id="1"),
-        pytest.param(700, (35, 65, 200, 300), id="2"),
-        pytest.param(3575, (75, 200, 300, 1700), id="3"),
-        pytest.param(33000, (3000, 10000, 15000), id="4"),
+        (130, (5, 15, 15, 70)),
+        (235, (10, 25, 70)),
+        (700, (35, 65, 200, 300)),
+        (3575, (75, 200, 300, 1700)),
+        (33000, (3000, 10000, 15000)),
     ),
 )
 def test_split_data_incomplete(dim, sizes):
     """Test array splitting with incomplete proportions."""
+    num_cols = 5
     proportions = tuple(size / dim for size in sizes)
-    splits = split_data(np.random.randn(dim, 5), proportions)
+    splits = split_data(np.random.randn(dim, num_cols), proportions)
     sizes += (dim - sum(sizes),)
     assert len(splits) == len(sizes)
     for size, split in zip(sizes, splits):
@@ -150,7 +155,7 @@ def test_split_data_categorizer(random_stratified_array, proportions, shuffle):
 @pytest.mark.parametrize("k", [-1, 0, 1])
 def test_kfold_invalid_k(random_array, k):
     with pytest.raises(ValueError):
-        _ = KFold(random_array, k)
+        KFold(random_array, k)
 
 
 def test_kfold_not_enough_entries():
@@ -159,7 +164,7 @@ def test_kfold_not_enough_entries():
     num_cols = 4
     data_array = np.random.randn(data_size, num_cols)
     with pytest.raises(ValueError):
-        _ = KFold(data_array, data_size + offset)
+        KFold(data_array, data_size + offset)
 
 
 @pytest.mark.parametrize("k", tuple(range(2, 5)))
