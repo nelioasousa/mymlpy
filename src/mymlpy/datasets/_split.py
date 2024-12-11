@@ -80,6 +80,35 @@ def split_data(data_array, proportions, shuffle=True, categorizer=None, copy=Fal
 
 
 class KFold:
+    """K-fold cross validation for numpy arrays.
+
+    Class instances are iterable returning (train, test) tuples.
+
+    Methods defined here:
+
+    __iter__(self)
+        Implement iter(self).
+
+    __next__(self)
+        Implement next(self).
+
+    get_split(self, split_index)
+        Return the (train, test) split at index `split_index`.
+
+        Raise `IndexError`.
+
+    get_fold(self, fold_index)
+        Return the fold (split's test array) at index `fold_index`.
+
+        Raise `IndexError`.
+
+    set_data_array(self, data_array)
+        Set `data_array` as the `KFold`'s instance data.
+
+        Raise a `ValueError` if `data_array` contains fewer entries than the number of
+        folds.
+    """
+
     def __init__(self, data_array, k, shuffle=False, categorizer=None, copy=False):
         if k < 2:
             raise ValueError("Minimum of k=2 folds.")
@@ -132,6 +161,10 @@ class KFold:
         return split
 
     def get_split(self, split_index):
+        """Get (train, test) split at index `split_index`.
+
+        Raise `IndexError` if `split_index` isn't a valid `list` index.
+        """
         test_idxs = self._folds[split_index]
         if self._categorizer is None:
             test_idxs = slice(*test_idxs)
@@ -144,6 +177,10 @@ class KFold:
         return train, test
 
     def get_fold(self, fold_index):
+        """Get fold (split's test array) at index `fold_index`.
+
+        Raise `IndexError` if `fold_index` isn't a valid `list` index.
+        """
         fold_idxs = self._folds[fold_index]
         if self._categorizer is None:
             fold_idxs = slice(*fold_idxs)
@@ -153,6 +190,11 @@ class KFold:
         return fold
 
     def set_data_array(self, data_array):
+        """Set `data_array` as the `KFold`'s instance data.
+
+        Raise a `ValueError` if `data_array` contains fewer entries than the number of
+        folds.
+        """
         if data_array.shape[0] < self._k:
             raise ValueError(f"`data_array` must have at least k={self._k} entries.")
         self._data = data_array
