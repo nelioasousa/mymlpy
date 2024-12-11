@@ -98,6 +98,20 @@ def test_onehot_parser_from_data():
         assert parser(category) == target
 
 
+def test_onehot_parser_not_str():
+    categories = (10, tuple(), 0.5, (10, 10.0))
+    parser = parsers.OneHotParser(categories)
+    for category in categories:
+        target = [c == category for c in categories]
+        assert parser(category) == target
+
+
+def test_onehot_parser_not_unique():
+    categories = ("up", "left", "right", "down", "up")
+    with pytest.raises(ValueError):
+        parsers.OneHotParser(categories)
+
+
 def test_index_parser():
     categories = ("S", "M", "L", "XL")
     parser = parsers.IndexParser(categories)
