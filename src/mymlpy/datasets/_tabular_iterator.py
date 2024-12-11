@@ -139,15 +139,11 @@ class TabularDatasetBatchIterator:
         self._next_batch_index += 1
         return batch
 
-    def get_batch(self):
+    def get_batch(self, dtype=None):
         """Return the last outputted batch."""
+        if dtype is not None and self._batch is not None:
+            return np.array(self._batch, dtype=dtype)
         return self._batch
-
-    def to_numpy(self, dtype):
-        """Return the last outputted batch as a numpy array."""
-        if self._batch is not None:
-            return np.array(self._batch, dtype=dtype, copy=True)
-        return None
 
     def advance(self, num_batches=1):
         """Advance `num_batches` from the actual batch.
