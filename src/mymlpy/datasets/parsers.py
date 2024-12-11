@@ -71,8 +71,12 @@ class OneHotParser:
         case_sensitive=True,
         strip_values=False,
     ):
-        categories = _unique_entries(data, sort_key)
-        return cls(categories, ignore_unknowns, case_sensitive, strip_values)
+        return cls(
+            categories=_unique_entries(data, sort_key),
+            ignore_unknowns=ignore_unknowns,
+            case_sensitive=case_sensitive,
+            strip_values=strip_values,
+        )
 
 
 class IndexParser(OneHotParser):
@@ -109,5 +113,9 @@ class IndexParser(OneHotParser):
         case_sensitive=True,
         strip_values=False,
     ):
-        categories = _unique_entries(data, sort_key)
-        return cls(categories, unknowns_index, case_sensitive, strip_values)
+        return cls(
+            categories=_unique_entries(data, sort_key),
+            unknowns_index=unknowns_index,
+            case_sensitive=case_sensitive,
+            strip_values=strip_values,
+        )
