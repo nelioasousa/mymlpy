@@ -51,19 +51,28 @@ class OneHotParser:
 
     The categories are meant to be `str` instances, but if `case_sensitive` is `True`
     and `strip_values` is `False`, they can be any hashable object.
-
-    Methods implemented here:
-
-    __call__(self, value)
-        Implement self(value).
-
-    from_data(cls, *args, **kwargs)
-        Custom constructor to build instances from an iterable holding the categories.
     """
 
     def __init__(
         self, categories, ignore_unknowns=False, case_sensitive=True, strip_values=False
     ):
+        """`OneHotParser` default initializer.
+
+        The categories are meant to be `str` instances, but if `case_sensitive` is `True`
+        and `strip_values` is `False`, they can be any hashable object.
+
+        `categories` - An iterator holding the target categories. Each category in
+        `categories` must be unique or `ValueError` is raised.
+
+        `ignore_unknowns` - If ser to `True`, unknown categories don't raise `ValueError`
+        and return a list with all category flags set to `False`.
+
+        `case_sensitive` - If set to `False` all string comparisons are performed with
+        case folded. See `help(str.casefold)` for more information.
+
+        `strip_values` - If set to `False` all strings are stripped of leading and
+        trailing whitespaces. See `help(str.strip)` for more information.
+        """
         categories = categories if case_sensitive else (c.casefold() for c in categories)
         categories = (c.strip() for c in categories) if strip_values else categories
         self.categories = tuple(categories)
@@ -124,19 +133,29 @@ class IndexParser(OneHotParser):
 
     The categories are meant to be `str` instances, but if `case_sensitive` is `True`
     and `strip_values` is `False`, they can be any hashable object.
-
-    Methods implemented here:
-
-    __call__(self, value)
-        Implement self(value).
-
-    from_data(cls, *args, **kwargs)
-        Custom constructor to build instances from an iterable holding the categories.
     """
 
     def __init__(
         self, categories, unknowns_index=None, case_sensitive=True, strip_values=False
     ):
+        """`IndexParser` default initializer.
+
+        The categories are meant to be `str` instances, but if `case_sensitive` is `True`
+        and `strip_values` is `False`, they can be any hashable object.
+
+        `categories` - An iterator holding the target categories. Each category in
+        `categories` must be unique or `ValueError` is raised.
+
+        `unknowns_index` - If `unknowns_index` is set to any `int` instance, unknown
+        categories don't raise `ValueError` and return `unknowns_index` as the parsed
+        index.
+
+        `case_sensitive` - If set to `False` all string comparisons are performed with
+        case folded. See `help(str.casefold)` for more information.
+
+        `strip_values` - If set to `False` all strings are stripped of leading and
+        trailing whitespaces. See `help(str.strip)` for more information.
+        """
         if unknowns_index is None:
             ignore_unknowns = False
         elif isinstance(unknowns_index, int):
