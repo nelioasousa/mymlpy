@@ -3,7 +3,7 @@ from pathlib import Path
 from collections.abc import Sequence
 
 
-class TabularDatasetBatchIterator:
+class TextDatasetBatchIterator:
     def __init__(
         self,
         file_path,

@@ -1,6 +1,6 @@
 import pytest
 
-from mymlpy.datasets import TabularDatasetBatchIterator
+from mymlpy.datasets import TextDatasetBatchIterator
 
 from importlib.resources import files as resource_files
 from importlib.resources import as_file
@@ -30,9 +30,7 @@ def tabular_03_path():
 
 @pytest.fixture
 def tabular_01_iterator(tabular_01_path):
-    return TabularDatasetBatchIterator(
-        tabular_01_path, 2, (int, float, int), skip_lines=1
-    )
+    return TextDatasetBatchIterator(tabular_01_path, 2, (int, float, int), skip_lines=1)
 
 
 def test_context(tabular_01_iterator):
@@ -55,7 +53,7 @@ def test_nested_contexts(tabular_01_iterator):
 @pytest.mark.parametrize("batch_size", list(range(1, 9)))
 def test_batch_size(tabular_01_path, batch_size):
     """Check batch size."""
-    ds = TabularDatasetBatchIterator(
+    ds = TextDatasetBatchIterator(
         tabular_01_path, batch_size, (int, float, int), skip_lines=1
     )
     with ds:
@@ -75,7 +73,7 @@ def test_expand_sequences(tabular_02_path):
         lines = ds_file.read().split("\n")[1:]
     targets = [l.split(",")[2].split("-") for l in lines if l]
     parser = lambda x: x.split("-")
-    ds = TabularDatasetBatchIterator(
+    ds = TextDatasetBatchIterator(
         tabular_02_path, 1, (int, float, parser), skip_lines=1, expand_sequences=True
     )
     with ds:
@@ -91,7 +89,7 @@ def test_expand_sequences(tabular_02_path):
 
 def test_ignore_errors(tabular_03_path):
     """Test `ignore_errors` parameter."""
-    ds = TabularDatasetBatchIterator(
+    ds = TextDatasetBatchIterator(
         tabular_03_path, 1, (int, str, float), ignore_errors=True
     )
     with ExitStack() as stack:
