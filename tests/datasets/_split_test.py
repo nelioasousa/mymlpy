@@ -54,7 +54,7 @@ def test_split_data_shuffle(random_array):
     """Verify shuffling."""
     proportions = (0.3, 0.7)
     arr_copy = np.copy(random_array)
-    split_data(random_array, proportions)
+    split_data(random_array, proportions, shuffle=True)
     assert not np.array_equal(random_array, arr_copy)
 
 
@@ -172,7 +172,7 @@ def test_kfold_not_enough_entries():
 def test_kfold_common(random_array, k, shuffle):
     min_size = random_array.shape[0] // k
     diff = random_array.shape[0] - (k * min_size)
-    folds = KFold(random_array, k, shuffle, copy=True)
+    folds = KFold(random_array, k, shuffle, return_copies=True)
     verify = np.empty((0, random_array.shape[1]), dtype=random_array.dtype)
     for train, test in folds:
         assert test.shape[0] == (min_size + (diff > 0))
@@ -194,7 +194,7 @@ def test_kfold_stratified(random_stratified_array, shuffle, k):
         min_sizes.append(min_size)
         diffs.append(size - (k * min_size))
     # K-fold split
-    folds = KFold(data, k, shuffle, categorizer, copy=True)
+    folds = KFold(data, k, shuffle, categorizer, return_copies=True)
     # Store the `data` entries by category
     data_categories = tuple(
         np.empty((size, data.shape[1]), dtype=data.dtype) for size in category_sizes

@@ -31,7 +31,9 @@ def _process_proportions(target_size, proportions):
     return tuple(sizes)
 
 
-def split_data(data_array, proportions, shuffle=True, categorizer=None, copy=False):
+def split_data(
+    data_array, proportions, shuffle=False, categorizer=None, return_copies=False
+):
     """Split array based on proportions.
 
     `data_array` - `numpy.ndarray` to split. Can't be an empty array.
@@ -47,8 +49,8 @@ def split_data(data_array, proportions, shuffle=True, categorizer=None, copy=Fal
     `data_array`) as an argument and must return a hashable value representing the
     entry's category.
 
-    `copy` - Whether to return the splits as copies. If `shuffle` is True, `data_array`
-    is shuffled in place regardless of the value of `copy`.
+    `return_copies` - Whether to return the splits as copies. If `shuffle` is True,
+    `data_array` is shuffled in place regardless of the value of `return_copies`.
     """
     proportions = _check_proportions(data_array.shape[0], proportions)
     if shuffle:
@@ -60,7 +62,7 @@ def split_data(data_array, proportions, shuffle=True, categorizer=None, copy=Fal
         for size in sizes:
             splits.append(data_array[start : start + size])
             start += size
-        if copy:
+        if return_copies:
             return tuple(np.copy(arr) for arr in splits)
         return tuple(splits)
     categories = {}
@@ -74,7 +76,7 @@ def split_data(data_array, proportions, shuffle=True, categorizer=None, copy=Fal
             splits_idxs[i].extend(category_idxs[start : start + size])
             start += size
     splits = tuple(data_array[sorted(idxs)] for idxs in splits_idxs)
-    if copy:
+    if return_copies:
         return tuple(np.copy(split) for split in splits)
     return splits
 
@@ -109,14 +111,16 @@ class KFold:
         folds.
     """
 
-    def __init__(self, data_array, k, shuffle=False, categorizer=None, copy=False):
+    def __init__(
+        self, data_array, k, shuffle=False, categorizer=None, return_copies=False
+    ):
         if k < 2:
             raise ValueError("Minimum of k=2 folds.")
         self._k = k
         self._shuffle = shuffle
         self._categorizer = categorizer
         self._next = 0
-        self._copy = copy
+        self._return_copies = return_copies
         self._data = None
         self._folds = None
         self.set_data_array(data_array)
@@ -172,7 +176,7 @@ class KFold:
         train_idxs[test_idxs] = 0
         test = self._data[test_idxs]
         train = self._data[train_idxs]
-        if self._copy:
+        if self._return_copies:
             return np.copy(train), np.copy(test)
         return train, test
 
@@ -185,7 +189,7 @@ class KFold:
         if self._categorizer is None:
             fold_idxs = slice(*fold_idxs)
         fold = self._data[fold_idxs]
-        if self._copy:
+        if self._return_copies:
             return np.copy(fold)
         return fold
 
