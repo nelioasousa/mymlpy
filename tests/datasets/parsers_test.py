@@ -89,7 +89,11 @@ def test_onehot_parser_case_strip():
 
 def test_onehot_parser_from_data():
     categories = ("missing", "found", "destroyed")
-    data = np.random.randint(0, len(categories), 10)
+    repeat = 4
+    data = np.concatenate(
+        tuple(np.full(repeat, fill_value=i) for i in range(len(categories)))
+    )
+    np.random.shuffle(data)
     data = np.array([categories[idx] for idx in data])
     sort_key = lambda x: categories.index(x)
     parser = parsers.OneHotParser.from_data(data, sort_key=sort_key)
