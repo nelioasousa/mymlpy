@@ -43,22 +43,38 @@ class TextDatasetBatchIterator:
         `ignore_errors` - Skip lines that are inconsistent with the number of parsers or
         raises `ValueError` during parsing.
         """
-        self.file_path = Path(file_path).resolve()
-        self.batch_size = batch_size
-        self.separator = separator
-        self.skip_lines = skip_lines
-        self.expand_sequences = expand_sequences
-        self.ignore_errors = ignore_errors
-        self.parsers = parsers
+        self._file_path = Path(file_path).resolve()
+        self._batch_size = batch_size
+        self._separator = separator
+        self._skip_lines = skip_lines
+        self._expand_sequences = expand_sequences
+        self._ignore_errors = ignore_errors
+        self._parsers = parsers
         self._file = None
         self._next_batch_index = 0
         self._batch_positions = dict()
         self._batch = None
 
+    @property
+    def ignore_errors(self):
+        return self._ignore_errors
+
+    @ignore_errors.setter
+    def ignore_errors(self, value):
+        self._ignore_errors = bool(value)
+
+    @property
+    def expand_sequences(self):
+        return self._expand_sequences
+
+    @expand_sequences.setter
+    def expand_sequences(self, value):
+        self._expand_sequences = bool(value)
+
     def __enter__(self):
         if self._file is not None:
-            raise RuntimeError("Already inside the context. Nesting isn't allowed")
-        self._file = self.file_path.open("r")
+            raise RuntimeError("Already inside the context. Nesting isn't allowed.")
+        self._file = self._file_path.open("r")
         try:
             self._reset_iterator(clear_batch_positions=True)
         except:
@@ -80,7 +96,7 @@ class TextDatasetBatchIterator:
         Position information is discarded even when the batch_size remains unchanged.
         """
         self._assert_open_context()
-        self.batch_size = batch_size
+        self._batch_size = batch_size
         self._reset_iterator(clear_batch_positions=True)
         return self
 
@@ -97,32 +113,32 @@ class TextDatasetBatchIterator:
         self._assert_open_context()
         batch = []
         self._seek_batch_position(self._next_batch_index)
-        while len(batch) < self.batch_size or self.batch_size < 1:
+        while len(batch) < self._batch_size or self._batch_size < 1:
             entry_position = self._file.tell()
             nextline = self._file.readline()
             if not nextline:
                 break
-            elements = nextline.removesuffix("\n").split(self.separator)
-            if len(elements) != len(self.parsers):
-                if self.ignore_errors:
+            elements = nextline.removesuffix("\n").split(self._separator)
+            if len(elements) != len(self._parsers):
+                if self._ignore_errors:
                     continue
                 raise RuntimeError(
                     "Inconsistent entry found: expecting size %d, got %d"
-                    % (len(self.parsers), len(elements))
+                    % (len(self._parsers), len(elements))
                 )
             entry = []
             for i, element in enumerate(elements):
                 try:
-                    element = self.parsers[i](element)
+                    element = self._parsers[i](element)
                 except ValueError:
-                    if self.ignore_errors:
+                    if self._ignore_errors:
                         entry = None
                         break
                     raise
                 if (
                     isinstance(element, Sequence)
                     and not isinstance(element, (str, bytes))
-                    and self.expand_sequences
+                    and self._expand_sequences
                 ):
                     entry.extend(element)
                 else:
@@ -201,7 +217,7 @@ class TextDatasetBatchIterator:
             self._batch_positions.clear()
         if not self._seek_batch_position(self._next_batch_index):
             self._file.seek(0)
-            for _ in range(self.skip_lines):
+            for _ in range(self._skip_lines):
                 self._file.readline()
 
     def _store_batch_position(self, batch_index, batch_position):

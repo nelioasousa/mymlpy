@@ -97,7 +97,7 @@ def test_ignore_errors(tabular_03_path):
         batches = list(ds)
         assert len(batches) == 8
         ds.iter(clear_batch_positions=True)
-        ds.ignore_errors = False
+        ds._ignore_errors = False
         stack.enter_context(pytest.raises(ValueError))
         _ = [batch for batch in ds]
         stack.enter_context(pytest.raises(RuntimeError))
