@@ -44,16 +44,34 @@ class TextDatasetBatchIterator:
         raises `ValueError` during parsing.
         """
         self._file_path = Path(file_path).resolve()
-        self._batch_size = batch_size
-        self._separator = separator
-        self._skip_lines = skip_lines
-        self._expand_sequences = expand_sequences
-        self._ignore_errors = ignore_errors
-        self._parsers = parsers
+        self._separator = str(separator)
+        self._skip_lines = int(skip_lines)
+        # Start public
+        self.batch_size = batch_size
+        self.expand_sequences = expand_sequences
+        self.ignore_errors = ignore_errors
+        self.parsers = parsers
+        # End public
         self._file = None
         self._next_batch_index = 0
         self._batch_positions = dict()
         self._batch = None
+
+    @property
+    def batch_size(self):
+        return self._batch_size
+
+    @batch_size.setter
+    def batch_size(self, value):
+        batch_size = int(value)
+        try:
+            old_batch_size = self._batch_size
+        except AttributeError:
+            self._batch_size = batch_size
+            return
+        if batch_size != old_batch_size:
+            self.clear_batch_positions()
+        self._batch_size = batch_size
 
     @property
     def ignore_errors(self):
@@ -70,6 +88,28 @@ class TextDatasetBatchIterator:
     @expand_sequences.setter
     def expand_sequences(self, value):
         self._expand_sequences = bool(value)
+
+    @property
+    def parsers(self):
+        return self._parsers
+
+    @parsers.setter
+    def parsers(self, value):
+        parsers = tuple(value)
+        try:
+            old_parsers = self._parsers
+        except AttributeError:
+            old_parsers = None
+        if old_parsers is not None and len(parsers) != len(old_parsers):
+            raise ValueError("The number of parsers can't change.")
+        for i, parser in enumerate(parsers):
+            try:
+                parser("value")
+            except ValueError:
+                pass
+            except Exception:
+                raise ValueError(f"Invalid parser at index {i}") from None
+        self._parsers = parsers
 
     def __enter__(self):
         if self._file is not None:
@@ -210,11 +250,17 @@ class TextDatasetBatchIterator:
                 next(self)
         return next(self)
 
+    def clear_batch_positions(self):
+        try:
+            self._batch_positions.clear()
+        except AttributeError:
+            pass
+
     def _reset_iterator(self, clear_batch_positions=False):
         self._next_batch_index = 0
         self._batch = None
         if clear_batch_positions:
-            self._batch_positions.clear()
+            self.clear_batch_positions()
         if not self._seek_batch_position(self._next_batch_index):
             self._file.seek(0)
             for _ in range(self._skip_lines):

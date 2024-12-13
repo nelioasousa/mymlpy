@@ -13,12 +13,12 @@ def random_array():
 
 def test_array_dataset_no_copy(random_array):
     ds = ArrayDataset(random_array, copy=False)
-    assert ds.get_data_array(copy=False) is random_array
+    assert ds.get_data_as(copy=False) is random_array
 
 
 def test_array_dataset_copy(random_array):
     ds = ArrayDataset(random_array, copy=True)
-    ds_array = ds.get_data_array(copy=False)
+    ds_array = ds.get_data_as(copy=False)
     assert ds_array is not random_array
     assert np.array_equal(ds_array, random_array)
     ds_array[0, 0] = random_array[0, 0] + 1
@@ -27,7 +27,7 @@ def test_array_dataset_copy(random_array):
 
 def test_array_dataset_batch_iter(random_array):
     ds = ArrayDataset(random_array)
-    ds_array_copy = ds.get_data_array(copy=True)
+    ds_array_copy = ds.get_data_as(copy=True)
     for idx, entry in enumerate(ds.batch_iter(1)):
         np.array_equal(entry[0], random_array[idx])
     assert not np.array_equal(ds_array_copy, random_array)

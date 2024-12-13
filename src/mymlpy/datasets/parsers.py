@@ -73,20 +73,85 @@ class OneHotParser:
         `strip_values` - If set to `False` all strings are stripped of leading and
         trailing whitespaces. See `help(str.strip)` for more information.
         """
-        categories = categories if case_sensitive else (c.casefold() for c in categories)
-        categories = (c.strip() for c in categories) if strip_values else categories
-        self.categories = tuple(categories)
-        if len(self.categories) != len(frozenset(self.categories)):
-            raise ValueError("`categories` must contain unique entries.")
+        # Start public
         self.ignore_unknowns = ignore_unknowns
         self.case_sensitive = case_sensitive
         self.strip_values = strip_values
+        self.categories = categories
+        # End public
+
+    @property
+    def ignore_unknowns(self):
+        return self._ignore_unknowns
+
+    @ignore_unknowns.setter
+    def ignore_unknowns(self, value):
+        self._ignore_unknowns = bool(value)
+
+    @property
+    def case_sensitive(self):
+        return self._case_sensitive
+
+    @case_sensitive.setter
+    def case_sensitive(self, value):
+        case_sensitive = bool(value)
+        try:
+            old_case_sensitive = self._case_sensitive
+        except AttributeError:
+            self._case_sensitive = case_sensitive
+            return
+        self._case_sensitive = case_sensitive
+        if old_case_sensitive and not case_sensitive:
+            try:
+                # Trigger a reprocessing of categories
+                self.categories = self._categories
+            except (ValueError, AttributeError):
+                self._case_sensitive = old_case_sensitive
+                raise ValueError(
+                    f"Couldn't set `case_sensitive` from {old_case_sensitive} to {case_sensitive}"
+                )
+
+    @property
+    def strip_values(self):
+        return self._strip_values
+
+    @strip_values.setter
+    def strip_values(self, value):
+        strip_values = bool(value)
+        try:
+            old_strip_values = self._strip_values
+        except AttributeError:
+            self._strip_values = strip_values
+            return
+        self._strip_values = strip_values
+        if not old_strip_values and strip_values:
+            try:
+                # Trigger a reprocessing of categories
+                self.categories = self._categories
+            except (ValueError, AttributeError):
+                self._strip_values = old_strip_values
+                raise ValueError(
+                    f"Couldn't set `strip_values` from {old_strip_values} to {strip_values}"
+                )
+
+    @property
+    def categories(self):
+        return self._categories
+
+    @categories.setter
+    def categories(self, value):
+        ctgs = value if self._case_sensitive else (c.casefold() for c in value)
+        ctgs = (c.strip() for c in ctgs) if self._strip_values else ctgs
+        ctgs = tuple(ctgs)
+        if len(ctgs) != len(frozenset(ctgs)):
+            raise ValueError("`categories` must contain unique entries.")
+        self._categories = ctgs
 
     def __call__(self, value):
-        value = value if self.case_sensitive else value.casefold()
-        value = value.strip() if self.strip_values else value
-        onehot = [value == category for category in self.categories]
-        if not self.ignore_unknowns and not sum(onehot):
+        value = value if self._case_sensitive else value.casefold()
+        value = value.strip() if self._strip_values else value
+        onehot = [value == category for category in self._categories]
+        if not self._ignore_unknowns and not sum(onehot):
             raise ValueError(f"'{value}' doesn't match any category.")
         return onehot
 
@@ -156,20 +221,40 @@ class IndexParser(OneHotParser):
         `strip_values` - If set to `False` all strings are stripped of leading and
         trailing whitespaces. See `help(str.strip)` for more information.
         """
-        if unknowns_index is None:
-            ignore_unknowns = False
-        elif isinstance(unknowns_index, int):
-            ignore_unknowns = True
-            unknowns_index = int(unknowns_index)
-        else:
-            raise ValueError("`unknowns_index` must be either `None` or an `int`.")
+        # if unknowns_index is None:
+        #     ignore_unknowns = False
+        # elif isinstance(unknowns_index, int):
+        #     ignore_unknowns = True
+        #     unknowns_index = int(unknowns_index)
+        # else:
+        #     raise ValueError("`unknowns_index` must be either `None` or an `int`.")
+        self.unknowns_index = unknowns_index
         super().__init__(
             categories=categories,
-            ignore_unknowns=ignore_unknowns,
+            ignore_unknowns=self.ignore_unknowns,
             case_sensitive=case_sensitive,
             strip_values=strip_values,
         )
-        self.unknowns_index = unknowns_index
+
+    @property
+    def unknowns_index(self):
+        return self._unknowns_index
+
+    @unknowns_index.setter
+    def unknowns_index(self, value):
+        if value is None:
+            self._unknowns_index = None
+            # Using public attribute since the setter is in another class
+            self.ignore_unknowns = False
+            return
+        try:
+            self._unknowns_index = int(value)
+        except ValueError:
+            raise ValueError(
+                "`unknowns_index` must be either `None` or an `int`."
+            ) from None
+        # Using public attribute since the setter is in another class
+        self.ignore_unknowns = True
 
     def __call__(self, value):
         onehot = super().__call__(value)
