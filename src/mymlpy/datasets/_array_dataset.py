@@ -15,43 +15,25 @@ class ArrayBatchIterator:
         `return_copies` - Whether to return copies of the batch instead o views from the
         underlying/wrapped numpy array.
         """
-        self._data = np.asarray(data)
-        # Start public
-        self.batch_size = batch_size
-        self.return_copies = return_copies
-        # End public
+        try:
+            data = np.asarray(data, copy=False)
+        except ValueError:
+            self._data = np.asarray(data)
+            return_copies = False
+        else:
+            self._data = data.view()
+        self._batch_size = int(batch_size)
+        self._return_copies = bool(return_copies)
         self._start = 0
-
-    @property
-    def data(self):
-        # View necessary so the user of the iterator can't mess
-        # with the array metadata so as to break the iterator
-        return self._data.view()
-
-    @property
-    def batch_size(self):
-        return self._batch_size
-
-    @batch_size.setter
-    def batch_size(self, value):
-        self._batch_size = int(value)
-
-    @property
-    def return_copies(self):
-        return self._return_copies
-
-    @return_copies.setter
-    def return_copies(self, value):
-        self._return_copies = bool(value)
 
     def __iter__(self):
         return self
 
     def __next__(self):
+        if self._start >= self._data.shape[0]:
+            raise StopIteration()
         end = self._start + self._batch_size
         batch = self._data[self._start : end]
-        if not batch.shape[0]:
-            raise StopIteration()
         self._start = end
         if self._return_copies:
             return np.copy(batch)
@@ -72,7 +54,9 @@ class ArrayDataset:
         `copy` - Whether to wrap a copy of `data`. Default is `None`, meaning that `data`
         is only copied if necessary.
         """
+        # Start public
         self.set_data_as(data=data, dtype=dtype, copy=copy)
+        # End public
 
     def set_data_as(self, data, dtype=None, copy=None):
         """Set underlying/wrapped numpy array."""
@@ -84,7 +68,6 @@ class ArrayDataset:
 
     @property
     def data(self):
-        # User is free to alter the array metadata in a safe way
         return self._data
 
     @data.setter
@@ -97,9 +80,9 @@ class ArrayDataset:
     def iter(self, batch_size=None, shuffle=False, return_copies=False):
         """Return an iterator for the wrapped data array.
 
-        `batch_size` - Size of the batch returned. Default is `None`, meaning that
-        `iter(data)` is returned if `return_copies` is `False` or `iter(np.copy(data))`
-        if `return_copies` is `True`.
+        `batch_size` - Size of the batch to return. Default is `None`, meaning that
+        `iter(data)` is returned if `return_copies` is `False`, or `iter(np.copy(data))`
+        is returned if `return_copies` is `True`.
 
         `shuffle` - Whether to shuffle the underlying/wrapped numpy array before
         iteration.
@@ -107,15 +90,14 @@ class ArrayDataset:
         `return_copies` - Whether to return copies of the batch instead o views from the
         underlying/wrapped numpy array.
         """
-        data = self._data
         if shuffle:
-            self.shuffle()
+            np.random.shuffle(self._data)
         if batch_size is None:
             if return_copies:
-                return iter(np.copy(data))
-            return iter(self)
+                return iter(np.copy(self._data))
+            return iter(self._data)
         return ArrayBatchIterator(
-            data=data, batch_size=batch_size, return_copies=return_copies
+            data=self._data, batch_size=batch_size, return_copies=return_copies
         )
 
     def batch_iter(self, batch_size, shuffle=True, return_copies=False):
