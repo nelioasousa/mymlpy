@@ -89,7 +89,13 @@ def _train_test_separator(data, test_indexes):
 
 class _SplitsIterator:
     def __init__(self, data, splits, return_copies):
-        self._data = data
+        try:
+            data = np.asarray(data, copy=False)
+        except ValueError:
+            self._data = np.asarray(data)
+            return_copies = False
+        else:
+            self._data = data.view()
         self._splits = splits
         self._return_copies = return_copies
         self._next = 0
@@ -222,7 +228,7 @@ class KFold:
     def __iter__(self):
         self._check_folds()
         return _SplitsIterator(
-            data=self._data.view(), splits=self._folds, return_copies=self._return_copies
+            data=self._data, splits=self._folds, return_copies=self._return_copies
         )
 
     def prepare_folds(self, shuffle=False):
