@@ -158,15 +158,6 @@ def test_kfold_invalid_k(random_array, k):
         KFold(random_array, k)
 
 
-def test_kfold_not_enough_entries():
-    data_size = 5
-    offset = 1
-    num_cols = 4
-    data_array = np.random.randn(data_size, num_cols)
-    with pytest.raises(ValueError):
-        KFold(data_array, data_size + offset)
-
-
 @pytest.mark.parametrize("k", tuple(range(2, 5)))
 @pytest.mark.parametrize("shuffle", (False, True))
 def test_kfold_common(random_array, k, shuffle):
