@@ -130,7 +130,7 @@ def test_index_parser_ignore_unknowns():
     unknowns = ("halt", "wait", "fast")
     for unknown in unknowns:
         assert parser(unknown) == unknowns_index
-    parser.ignore_unknowns = False
+    parser.unknowns_index = None
     for unknown in unknowns:
         with pytest.raises(ValueError):
             parser(unknown)

@@ -211,9 +211,9 @@ class IndexParser(OneHotParser):
         `categories` - An iterator holding the target categories. Each category in
         `categories` must be unique or `ValueError` is raised.
 
-        `unknowns_index` - If `unknowns_index` is set to any `int` instance, unknown
-        categories don't raise `ValueError` and return `unknowns_index` as the parsed
-        index.
+        `unknowns_index` - If set to an `int` (or a value convertible to `int`), unknown
+        categories will not raise a `ValueError` during parsing but will instead return
+        `unknowns_index` as the parsed index.
 
         `case_sensitive` - If set to `False` all string comparisons are performed with
         case folded. See `help(str.casefold)` for more information.
@@ -221,20 +221,25 @@ class IndexParser(OneHotParser):
         `strip_values` - If set to `False` all strings are stripped of leading and
         trailing whitespaces. See `help(str.strip)` for more information.
         """
-        # if unknowns_index is None:
-        #     ignore_unknowns = False
-        # elif isinstance(unknowns_index, int):
-        #     ignore_unknowns = True
-        #     unknowns_index = int(unknowns_index)
-        # else:
-        #     raise ValueError("`unknowns_index` must be either `None` or an `int`.")
-        self.unknowns_index = unknowns_index
         super().__init__(
             categories=categories,
-            ignore_unknowns=self.ignore_unknowns,
             case_sensitive=case_sensitive,
             strip_values=strip_values,
         )
+        self.unknowns_index = unknowns_index
+
+    @property
+    def ignore_unknowns(self):
+        return self._ignore_unknowns
+
+    @ignore_unknowns.setter
+    def ignore_unknowns(self, value):
+        try:
+            _ = self._ignore_unknowns
+        except AttributeError:
+            self._ignore_unknowns = bool(value)
+        else:
+            raise AttributeError("Readonly attribute. Set `self.unknowns_index` instead.")
 
     @property
     def unknowns_index(self):
@@ -244,8 +249,7 @@ class IndexParser(OneHotParser):
     def unknowns_index(self, value):
         if value is None:
             self._unknowns_index = None
-            # Using public attribute since the setter is in another class
-            self.ignore_unknowns = False
+            self._ignore_unknowns = False
             return
         try:
             self._unknowns_index = int(value)
@@ -253,8 +257,7 @@ class IndexParser(OneHotParser):
             raise ValueError(
                 "`unknowns_index` must be either `None` or an `int`."
             ) from None
-        # Using public attribute since the setter is in another class
-        self.ignore_unknowns = True
+        self._ignore_unknowns = True
 
     def __call__(self, value):
         onehot = super().__call__(value)
