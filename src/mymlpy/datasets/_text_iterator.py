@@ -70,7 +70,7 @@ class TextDatasetBatchIterator:
             self._batch_size = batch_size
             return
         if batch_size != old_batch_size:
-            self.clear_batch_positions()
+            self._batch_positions.clear()
         self._batch_size = batch_size
 
     @property
@@ -251,16 +251,13 @@ class TextDatasetBatchIterator:
         return next(self)
 
     def clear_batch_positions(self):
-        try:
-            self._batch_positions.clear()
-        except AttributeError:
-            pass
+        self._batch_positions.clear()
 
     def _reset_iterator(self, clear_batch_positions=False):
         self._next_batch_index = 0
         self._batch = None
         if clear_batch_positions:
-            self.clear_batch_positions()
+            self._batch_positions.clear()
         if not self._seek_batch_position(self._next_batch_index):
             self._file.seek(0)
             for _ in range(self._skip_lines):
