@@ -1,43 +1,59 @@
-from collections.abc import Container
+from collections.abc import Iterable
 from functools import wraps
 
 
-def missing_data(missing_data_repr, missing_data_placeholder=None, case_sensitive=True):
+def missing_data(
+    missing_data_repr,
+    missing_data_placeholder=None,
+    case_sensitive=True,
+    strip_values=False,
+):
     """Decorator to enhance parsers with the ability to handle missing data.
 
     This decorator wraps a simple parser and extends its functionality to recognize and
     appropriately process missing values.
 
+    The representations are meant to be `str` instances, but if `case_sensitive` is
+    `True` and `strip_values` is `False`, they can be any hashable object.
+
     Arguments:
 
-    `missing_dara_repr` - Python `str` or `collections.abc.Container` instance
-    representing/storing the representation of a missing data (like "", "nan", "None").
+    `missing_dara_repr` - Python `str` or `collections.abc.Iterable` instance
+    representing/storing the representations of missing data (e.g.: "", "nan", "None").
 
     `missing_data_placeholder` - An object to be the placeholder of missing data.
     Defaults to `None`.
 
     `case_sensitive` - Whether to consider characters case during comparison. Defaults to
     `True`.
+
+    `strip_values` - Whether to strip leading and trailing whitespaces before comparison.
+    Defaults to `False`.
     """
     if isinstance(missing_data_repr, str):
         missing_data_repr = (missing_data_repr,)
-    if isinstance(missing_data_repr, Container) and not isinstance(
+    if isinstance(missing_data_repr, Iterable) and not isinstance(
         missing_data_repr, bytes
     ):
-        try:
-            # Faster lookup
-            missing_data_repr = frozenset(missing_data_repr)
-        except TypeError:
-            pass
+        missing_data_repr = (
+            missing_data_repr
+            if case_sensitive
+            else (r.casefold() for r in missing_data_repr)
+        )
+        missing_data_repr = (
+            (r.strip() for r in missing_data_repr) if strip_values else missing_data_repr
+        )
+        missing_data_repr = frozenset(missing_data_repr)
     else:
         raise ValueError(
-            "`missing_data_repr` must be either a `str` object or an instance of `collections.abc.Container`"
+            "`missing_data_repr` must be either a `str` object or an instance of `collections.abc.Iterable`"
         )
 
     def parser_decorator(parser):
         @wraps(parser)
         def wrapper(value):
             value_lookup = value if case_sensitive else value.casefold()
+            value_lookup = value_lookup.strip() if strip_values else value_lookup
             if value_lookup in missing_data_repr:
                 return missing_data_placeholder
             return parser(value)

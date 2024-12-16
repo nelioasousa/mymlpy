@@ -5,30 +5,41 @@ from mymlpy.datasets import parsers
 
 
 @pytest.mark.parametrize(
-    "missing_repr,case_sensitive,missing_data_values,data_values",
+    "missing_repr,case_sensitive,strip_values,missing_data_values,data_values",
     (
         pytest.param(
-            "None", True, ("None",), ("none", "NONE", ""), id="None-CaseSensitive"
+            "None ",
+            True,
+            True,
+            ("None", " None"),
+            (" none", "NONE", " "),
+            id="None-CaseSensitive-Strip",
         ),
         pytest.param(
             "none",
             False,
-            ("None", "NONE", "none"),
+            True,
+            ("None", "NONE ", " none "),
             ("", "nan", "NaN"),
-            id="None-CaseInsensitive",
+            id="None-CaseInsensitive-Strip",
         ),
         pytest.param(
             ("nan", "NaN"),
             True,
+            False,
             ("nan", "NaN"),
             ("NAN", "naN"),
             id="(nan, NaN)-CaseSensitive",
         ),
-        pytest.param("", True, ("",), (" ", "None", "nan"), id="EmptyString"),
+        pytest.param("", True, False, ("",), (" ", "None", "nan"), id="EmptyString"),
     ),
 )
-def test_missing_data(missing_repr, case_sensitive, missing_data_values, data_values):
-    @parsers.missing_data(missing_repr, case_sensitive=case_sensitive)
+def test_missing_data(
+    missing_repr, case_sensitive, strip_values, missing_data_values, data_values
+):
+    @parsers.missing_data(
+        missing_repr, case_sensitive=case_sensitive, strip_values=strip_values
+    )
     def dummy_parser(value):
         return value
 
