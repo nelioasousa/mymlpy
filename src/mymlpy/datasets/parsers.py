@@ -7,6 +7,17 @@ def missing_data(missing_data_repr, missing_data_placeholder=None, case_sensitiv
 
     This decorator wraps a simple parser and extends its functionality to recognize and
     appropriately process missing values.
+
+    Arguments:
+
+    `missing_dara_repr` - Python `str` or `collections.abc.Container` instance
+    representing/storing the representation of a missing data (like "", "nan", "None").
+
+    `missing_data_placeholder` - An object to be the placeholder of missing data.
+    Defaults to `None`.
+
+    `case_sensitive` - Whether to consider characters case during comparison. Defaults to
+    `True`.
     """
     if isinstance(missing_data_repr, str):
         missing_data_repr = (missing_data_repr,)
@@ -60,6 +71,8 @@ class OneHotParser:
 
         The categories are meant to be `str` instances, but if `case_sensitive` is `True`
         and `strip_values` is `False`, they can be any hashable object.
+
+        Arguments:
 
         `categories` - An iterator holding the target categories. Each category in
         `categories` must be unique or `ValueError` is raised.
@@ -169,6 +182,8 @@ class OneHotParser:
         The categories are meant to be `str` instances, but if `case_sensitive` is `True`
         and `strip_values` is `False`, they can be any hashable object.
 
+        Arguments:
+
         `data` - An iterator holding the target categories. If `data` has a `flatten`
         method (similar to `numpy.ndarray`) then `data.flatten()` is called and the
         result is assigned as the new `data`.
@@ -207,6 +222,8 @@ class IndexParser(OneHotParser):
 
         The categories are meant to be `str` instances, but if `case_sensitive` is `True`
         and `strip_values` is `False`, they can be any hashable object.
+
+        Arguments:
 
         `categories` - An iterator holding the target categories. Each category in
         `categories` must be unique or `ValueError` is raised.
@@ -278,6 +295,8 @@ class IndexParser(OneHotParser):
 
         The categories are meant to be `str` instances, but if `case_sensitive` is `True`
         and `strip_values` is `False`, they can be any hashable object.
+
+        Arguments:
 
         `data` - An iterator holding the target categories. If `data` has a `flatten`
         method (similar to `numpy.ndarray`) then `data.flatten()` is called and the

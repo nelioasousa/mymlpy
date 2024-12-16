@@ -14,13 +14,14 @@ class TextDatasetBatchIterator:
         expand_sequences=False,
         ignore_errors=False,
     ):
-        """
-        Provides batch iteration functionality for tabular datasets.
+        """Provides batch iteration functionality for tabular datasets.
 
         Designed for handling out-of-memory datasets and raw datasets that cannot be
         directly converted to homogeneous NumPy arrays. Supports flexible iteration,
         including forward and backward traversal, and stores file positions of batches
         to enable faster access during subsequent iterations.
+
+        Arguments:
 
         `file_path` - Path-like object giving the dataset location in the file system.
 
@@ -133,7 +134,11 @@ class TextDatasetBatchIterator:
     def iter_with_batch_size(self, batch_size):
         """Reset the iterator with a different batch size.
 
-        Position information is discarded even when the batch_size remains unchanged.
+        Position information is discarded independently of the `batch_size` value.
+
+        Arguments:
+
+        `batch_size` - Batch size.
         """
         self._assert_open_context()
         self._batch_size = batch_size
@@ -143,7 +148,9 @@ class TextDatasetBatchIterator:
     def iter(self, clear_batch_positions=False):
         """Reset the iterator to the beginning of the dataset.
 
-        Position information is discarded if `clear_batch_positions` is True.
+        Arguments:
+
+        `clear_batch_positions` - Whether to clear position information before iteration.
         """
         self._assert_open_context()
         self._reset_iterator(clear_batch_positions=clear_batch_positions)
@@ -196,7 +203,13 @@ class TextDatasetBatchIterator:
         return batch
 
     def get_batch(self, dtype=None):
-        """Return the last outputted batch."""
+        """Return the last outputted batch.
+
+        Arguments:
+
+        `dtype` - If `None` the raw batch (a python `list` object) is returned. Otherwise
+        should be a valid numpy dtype so as the batch to be returned as a numpy array.
+        """
         if dtype is not None and self._batch is not None:
             return np.array(self._batch, dtype=dtype)
         return self._batch
@@ -204,10 +217,14 @@ class TextDatasetBatchIterator:
     def advance(self, num_batches=1):
         """Advance `num_batches` from the actual batch.
 
-        The batch landed at is returned. Non-positive `num_batches` is a no-op and
-        returns `None`.
+        The batch landed at is returned.
 
         Raises `StopIteration`.
+
+        Arguments:
+
+        `num_batches` - How many batchs to advance over. The current batch is counted.
+        Non-positive `num_batches` is a no-op and returns `None`.
         """
         self._assert_open_context()
         if num_batches < 1:
@@ -221,11 +238,16 @@ class TextDatasetBatchIterator:
         return next(self)
 
     def retreat(self, num_batches=1):
-        """Advance `num_batches` from the actual batch.
+        """Retreat `num_batches` from the actual batch.
 
-        The batch landed at is returned. `retreat()` doesn't wrap around. If a large
+        The batch landed at is returned. `self.retreat()` doesn't wrap around. If a large
         enough value is supplied by `num_batches`, the iteartor is reseted and `None`
-        is returned. Non-positive `num_batches` is a no-op and returns `None`.
+        is returned.
+
+        Arguments:
+
+        `num_batches` - How many batchs to go back over. The current batch is counted.
+        Non-positive `num_batches` is a no-op and returns `None`.
         """
         self._assert_open_context()
         if num_batches < 1:
@@ -235,9 +257,13 @@ class TextDatasetBatchIterator:
     def goto(self, batch_index):
         """Go to any batch based on it's index and return it.
 
-        Negative `batch_index` is equivalent to a call to `self.iter()`.
-
         Raises `StopIteration`.
+
+        Arguments:
+
+        `batch_index` - 0-based index of the batch to go to. Negative valeus for
+        `batch_index` resets the iterator at it's beginning, being equivalent to a call
+        to `self.iter()`.
         """
         self._assert_open_context()
         if batch_index < 0:
@@ -251,6 +277,7 @@ class TextDatasetBatchIterator:
         return next(self)
 
     def clear_batch_positions(self):
+        """Clear stored batch positions."""
         self._batch_positions.clear()
 
     def _reset_iterator(self, clear_batch_positions=False):
