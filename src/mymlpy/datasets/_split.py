@@ -31,43 +31,44 @@ def _process_proportions(target_size, proportions):
     return tuple(sizes)
 
 
-def split_data(
-    data_array, proportions, shuffle=False, categorizer=None, return_copies=False
-):
+def split_data(data, proportions, shuffle=False, categorizer=None, return_copies=False):
     """Split array based on proportions.
 
     Arguments:
 
-    `data_array` - `numpy.ndarray` to split. Can't be an empty array.
+    `data` - Data to split. If not a numpy array, one is constructed based on `data`.
+    Can't be empty.
 
     `proportions` - Proportions for each split set. If the proportions sum to less than
     1.0, the last proportion is inferred to make the total equal to 1.0. If the
     proportions exceed 1.0, a `ValueError` is raised.
 
-    `shuffle` - Whether to shuffle `data_array` in-place before splitting.
+    `shuffle` - Whether to shuffle `data` in-place before splitting. If `data` isn't a
+    numpy array, it will be copied into one and this copy that will be shuffled.
 
-    `categorizer` - A callable that returns a unique hashable object for each category in
-    `data_array`. It receives each entry in `data_array` (one dimension lest than
-    `data_array`) as an argument and must return a hashable value representing the
-    entry's category.
+    `categorizer` - A callable that returns a unique hashable object for each category
+    present in `data`. `categorizer` will be called for each entry in `data` and receive
+    it as the only and first positional argument and must return a hashable value
+    representing the entry's category.
 
-    `return_copies` - Whether to return the splits as copies or views of `data_array`.
+    `return_copies` - Whether to return the splits as copies or views of `data`.
     """
-    proportions = _check_proportions(data_array.shape[0], proportions)
+    data = np.asarray(data)
+    proportions = _check_proportions(data.shape[0], proportions)
     if shuffle:
-        np.random.shuffle(data_array)
+        np.random.shuffle(data)
     if categorizer is None:
-        sizes = _process_proportions(data_array.shape[0], proportions)
+        sizes = _process_proportions(data.shape[0], proportions)
         splits = []
         start = 0
         for size in sizes:
-            splits.append(data_array[start : start + size])
+            splits.append(data[start : start + size])
             start += size
         if return_copies:
             return tuple(np.copy(arr) for arr in splits)
         return tuple(splits)
     categories = {}
-    for idx, entry in enumerate(data_array):
+    for idx, entry in enumerate(data):
         categories.setdefault(categorizer(entry), list()).append(idx)
     # List comprehension ensures that each list is a distinct object
     splits_idxs = [list() for _ in proportions]
@@ -77,7 +78,7 @@ def split_data(
         for i, size in enumerate(sizes):
             splits_idxs[i].extend(category_idxs[start : start + size])
             start += size
-    splits = tuple(data_array[sorted(idxs)] for idxs in splits_idxs)
+    splits = tuple(data[sorted(idxs)] for idxs in splits_idxs)
     if return_copies:
         return tuple(np.copy(split) for split in splits)
     return splits
