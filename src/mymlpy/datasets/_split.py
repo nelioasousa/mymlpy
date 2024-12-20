@@ -121,7 +121,7 @@ class _SplitsIterator:
 
 
 class KFold:
-    """K-fold cross validation for numpy arrays.
+    """K-fold cross validation.
 
     Stratified folding is not reliable for very small datasets with categories that have
     fewer entries than the number of folds.
@@ -133,18 +133,19 @@ class KFold:
         Arguments:
 
         `data` - Data to be splitted in folds. If not a numpy array, one is constructed
-        based on `data`.
+        based on `data`. Can't be empty.
 
         `k` - Number of folds to split `data`.
 
-        `shuffle` - Whether to shuffle `data` in-place before splitting.
+        `shuffle` - Whether to shuffle `data` in-place before splitting. If `data` isn't
+        a numpy array, it will be copied into one and this copy that will be shuffled.
 
         `categorizer` - A callable that returns a unique hashable object for each
-        category in `data`. It receives each entry in `data` (one dimension lest than
-        `data`) as an argument and must return a hashable value representing the entry's
-        category.
+        category present in `data`. `categorizer` will be called for each entry in `data`
+        and receive it as the only and first positional argument and must return a
+        hashable value representing the entry's category.
 
-        `return_copies` - Whether to return the splits as copies or views of `data`.
+        `return_copies` - Whether to return the splits as copies or views.
         """
         # Start public
         self.data = data
@@ -271,7 +272,7 @@ class KFold:
 
         Arguments:
 
-        `shuffle` - Whether to shuffle `data` in-place before splitting.
+        `shuffle` - Whether to shuffle `self.data` in-place before splitting.
         """
         if shuffle:
             np.random.shuffle(self._data)
