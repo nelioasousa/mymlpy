@@ -71,7 +71,7 @@ class LinearRegression:
             raise ValueError("`y` isn't consistent with `X`.")
 
     def _check_sample_weights(self, sample_weights, N):
-        if len(sample_weights) > 3:
+        if len(sample_weights.shape) > 3:
             raise ValueError("`sample_weights` must be a flat array or a column vector.")
         try:
             sample_weights = sample_weights.reshape((N, 1))
@@ -96,9 +96,9 @@ class LinearRegression:
         if self.ridge_alpha > 0.0:
             l2_reg = self.ridge_alpha * np.identity(P + 1, dtype=X.dtype)
             l2_reg[0, 0] = 0  # Do not regularize intercept
-            inv = np.linalg.inv((X_t @ X) + l2_reg)
+            inv = np.linalg.inv((X_t @ X_ext) + l2_reg)
         else:
-            inv = np.linalg.inv(X_t @ X)
+            inv = np.linalg.inv(X_t @ X_ext)
         params = inv @ X_t @ y
         self._intercept = params[0, 0]
         self._coefficients = params[:, 0][1:]
