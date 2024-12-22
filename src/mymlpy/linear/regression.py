@@ -1,5 +1,7 @@
 import numpy as np
 
+from mymlpy.datasets import ArrayDataset
+
 
 class LinearRegression:
     def __init__(self, ridge_alpha=0.0):
@@ -130,6 +132,9 @@ class StochasticLinearRegression(LinearRegression):
 
     @early_stopper.setter
     def early_stopper(self, value):
+        if value is None:
+            self._early_stopper = None
+            return
         early_stopper = value
         loss_example = np.array([1.0, 0.5, 0.01, 0.0])
         try:
@@ -142,10 +147,71 @@ class StochasticLinearRegression(LinearRegression):
         self._early_stopper = early_stopper
 
     def reset_parameters(self):
-        return
+        self._intercept = None
+        self._coefficients = None
+        self._parameters = None
 
     def fit_step(self, X, y, sample_weights=None):
-        return
+        parameters = self.parameters
+        if parameters is None:
+            X = np.asarray(X)
+            self._check_X(X)
+            parameters = np.zeros((X.shape[1] + 1, 1), dtype=X.dtype)
+        else:
+            X = np.asarray(X, dtype=parameters.dtype)
+            self._check_X(X, parameters.shape[0] - 1)
+        N, _ = X.shape
+        y = self._check_y(np.asarray(y, dtype=X.dtype), N)
+        y_pred = X @ parameters[1:] + parameters[0]
+        errors = y - y_pred
+        if sample_weights is None:
+            sample_weights = 1 / N
+        else:
+            sample_weights = self._check_sample_weights(
+                np.asarray(sample_weights, dtype=X.dtype), N
+            )
+        intercept_step = (sample_weights * errors).sum()
+        coefficients_step = X.transpose() @ (sample_weights * errors)
+        if self._ridge_alpha > 0.0:
+            coefficients_step[:] -= self._ridge_alpha * parameters[1:]
+        parameters[0, 0] += intercept_step
+        parameters[1:] += coefficients_step
+        self._intercept = parameters[0, 0]
+        self._coefficients = parameters[1:, 0]
+        self._parameters = parameters
+        return self.parameters
 
     def fit(self, X, y, num_epochs, batch_size, sample_weights=None):
-        return
+        num_epochs = int(num_epochs)
+        if num_epochs < 1:
+            raise ValueError("`num_epochs` must be at least 1.")
+        X = np.asarray(X)
+        self._check_X(X)
+        N = X.shape[0]
+        batch_size = int(batch_size)
+        if batch_size < 1:
+            batch_size = N
+        y = self._check_y(np.asarray(y, dtype=X.dtype), N)
+        if sample_weights is None:
+            sample_weights = np.ones((N, 1), dtype=X.dtype) / N
+        else:
+            sample_weights = self._check_sample_weights(
+                np.asarray(sample_weights, dtype=X.dtype), N
+            )
+        self.reset_parameters()
+        indexes = ArrayDataset(np.arange(N))
+        loss_history = np.empty(num_epochs, dtype=np.float64)
+        for i in range(num_epochs):
+            for batch in indexes.batch_iter(batch_size):
+                X_train = X[batch]
+                y_train = y[batch]
+                sample_weights_train = sample_weights[batch]
+                parameters = self.fit_step(X_train, y_train, sample_weights_train)
+            y_pred = X @ parameters[1:] + parameters[0]
+            loss = sample_weights.transpose() @ ((y - y_pred) ** 2)
+            loss_history[i] = loss
+            if self._early_stopper is not None and self._early_stopper(
+                loss_history[: (i + 1)]
+            ):
+                return parameters
+        return parameters
