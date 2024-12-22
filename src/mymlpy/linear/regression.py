@@ -108,7 +108,7 @@ class LinearRegression:
     def predict(self, X):
         coefficients = self._coefficients
         if coefficients is None:
-            raise RuntimeError("Model not fitted do any data.")
+            raise RuntimeError("Model not fitted to any data.")
         X = np.asarray(X, dtype=coefficients.dtype)
         if len(X.shape) == 1:
             try:
