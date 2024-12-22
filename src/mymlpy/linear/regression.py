@@ -122,9 +122,21 @@ class LinearRegression:
 
 
 class StochasticLinearRegression(LinearRegression):
-    def __init__(self, ridge_alpha=0.0, early_stopper=None):
+    def __init__(self, learn_step, ridge_alpha=0.0, early_stopper=None):
         super().__init__(ridge_alpha)
+        self.learn_step = learn_step
         self.early_stopper = early_stopper
+
+    @property
+    def learn_step(self):
+        return self._learn_step
+
+    @learn_step.setter
+    def learn_step(self, value):
+        step = float(value)
+        if step < 0.0:
+            raise ValueError("`learn_step` must be non-negative.")
+        self._learn_step = step
 
     @property
     def early_stopper(self):
@@ -174,8 +186,8 @@ class StochasticLinearRegression(LinearRegression):
         coefficients_step = X.transpose() @ (sample_weights * errors)
         if self._ridge_alpha > 0.0:
             coefficients_step[:] -= self._ridge_alpha * parameters[1:]
-        parameters[0, 0] += intercept_step
-        parameters[1:] += coefficients_step
+        parameters[0, 0] += self._learn_step * intercept_step
+        parameters[1:] += self._learn_step * coefficients_step
         self._intercept = parameters[0, 0]
         self._coefficients = parameters[1:, 0]
         self._parameters = parameters
