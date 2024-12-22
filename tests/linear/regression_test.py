@@ -35,7 +35,7 @@ def test_linear_regression(ridge_alpha, generate_weights, random_linear_dataset)
     X_train, X_test = split_data(X, proportions=proportions)
     sample_weights = None
     if generate_weights:
-        sample_weights = np.random.rand(len(X_train))
+        sample_weights = np.random.rand(len(X_train)) + 0.01
         sample_weights[:] /= sample_weights.sum()
     y_train, _ = split_data(y, proportions=proportions)
     regressor = LinearRegression(ridge_alpha=ridge_alpha)
@@ -43,5 +43,5 @@ def test_linear_regression(ridge_alpha, generate_weights, random_linear_dataset)
     y_pred = regressor.predict(X_test)
     y_real = X_test @ coefficients.reshape((-1, 1)) + intercept
     error = ((y_pred - y_real) ** 2).sum() / len(X_test)
-    # TODO: what test to make?
+    # TODO: what test to perform?
     assert error >= irreducible_error
