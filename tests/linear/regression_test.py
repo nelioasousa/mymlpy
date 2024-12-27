@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from mymlpy.linear.regression import LinearRegression
+from mymlpy.linear.regression import LinearRegression, StochasticLinearRegression
 from mymlpy.datasets import split_data
 
 
@@ -35,13 +35,48 @@ def test_linear_regression(ridge_alpha, generate_weights, random_linear_dataset)
     X_train, X_test = split_data(X, proportions=proportions)
     sample_weights = None
     if generate_weights:
-        sample_weights = np.random.rand(len(X_train)) + 0.01
-        sample_weights[:] /= sample_weights.sum()
+        sample_weights = np.random.randint(1, 5, X_train.shape[0])
+        sample_weights = sample_weights / sample_weights.sum()
     y_train, _ = split_data(y, proportions=proportions)
     regressor = LinearRegression(ridge_alpha=ridge_alpha)
     regressor.fit(X_train, y_train, sample_weights=sample_weights)
     y_pred = regressor.predict(X_test)
     y_real = X_test @ coefficients.reshape((-1, 1)) + intercept
-    error = ((y_pred - y_real) ** 2).sum() / len(X_test)
+    error = ((y_pred - y_real) ** 2).sum() / X_test.shape[0]
+    # TODO: what test to perform?
+    assert error >= irreducible_error
+
+
+@pytest.mark.parametrize(
+    "learn_step,num_epochs,ridge_alpha,generate_weights",
+    (
+        (10e-5, 400, 0.0, False),
+        (10e-6, 500, 0.0, True),
+        (10e-7, 700, 0.02, False),
+        (10e-8, 1000, 0.02, True),
+    ),
+)
+def test_stochastic_linear_regression(
+    learn_step, num_epochs, ridge_alpha, generate_weights, random_linear_dataset
+):
+    intercept, coefficients, X, y, irreducible_error = random_linear_dataset
+    proportions = (0.7, 0.3)
+    X_train, X_test = split_data(X, proportions=proportions)
+    y_train, _ = split_data(y, proportions=proportions)
+    sample_weights = None
+    if generate_weights:
+        sample_weights = np.random.randint(1, 5, X_train.shape[0])
+        sample_weights = sample_weights / sample_weights.sum()
+    regressor = StochasticLinearRegression(learn_step=learn_step, ridge_alpha=ridge_alpha)
+    regressor.fit(
+        X_train,
+        y_train,
+        num_epochs=num_epochs,
+        batch_size=5,
+        sample_weights=sample_weights,
+    )
+    y_pred = regressor.predict(X_test)
+    y_real = X_test @ coefficients.reshape((-1, 1)) + intercept
+    error = ((y_pred - y_real) ** 2).sum() / X_test.shape[0]
     # TODO: what test to perform?
     assert error >= irreducible_error
