@@ -3,13 +3,14 @@ import numpy as np
 from mymlpy.datasets import ArrayDataset
 
 
+_NO_SAMPLE_WEIGHTS = object()
+
+
 class LinearRegression:
     def __init__(self, ridge_alpha=0.0):
         # Start public
         self.ridge_alpha = ridge_alpha
         # End public
-        self._intercept = None
-        self._coefficients = None
         self._parameters = None
 
     @property
@@ -25,7 +26,9 @@ class LinearRegression:
 
     @property
     def intercept(self):
-        return self._intercept
+        if self._parameters is None:
+            return None
+        return self._parameters[0, 0]
 
     @intercept.setter
     def intercept(self, value):
@@ -33,9 +36,9 @@ class LinearRegression:
 
     @property
     def coefficients(self):
-        if self._coefficients is None:
+        if self._parameters is None:
             return None
-        return np.copy(self._coefficients)
+        return np.copy(self._parameters[1:, 0])
 
     @coefficients.setter
     def coefficients(self, value):
@@ -51,6 +54,9 @@ class LinearRegression:
     def parameters(self, value):
         raise AttributeError("Read-only attribute.")
 
+    def unset_parameters(self):
+        self._parameters = None
+
     def _check_X(self, X, features_dim=None):
         if not X.shape[0]:
             raise ValueError("`X` is empty.")
@@ -65,7 +71,7 @@ class LinearRegression:
         if len(y.shape) > 2:
             raise ValueError("`y` must be a flat array or a column vector.")
         if len(y.shape) == 2 and y.shape[1] != 1:
-            raise ValueError("Multi-output regression not supported.")
+            raise ValueError("Multi-output/Multi-class regression not supported.")
         try:
             y.resize((N, 1))
         except ValueError:
@@ -78,21 +84,16 @@ class LinearRegression:
             sample_weights.resize((N, 1))
         except ValueError:
             raise ValueError("`sample_weights` isn't consistent with `X`.")
-        sample_weights[:] = sample_weights / sample_weights.sum()
+        # sample_weights[:] = sample_weights / sample_weights.sum()
 
     def fit(self, X, y, sample_weights=None):
-        X = np.asarray(X, dtype=np.float64)
-        self._check_X(X)
+        X, y, sample_weights = self._check(X, y, sample_weights)
         N, P = X.shape
-        y = np.asarray(y, dtype=X.dtype)
-        self._check_y(y, N)
         X_ext = np.concatenate((np.ones((N, 1), dtype=X.dtype), X), axis=1)
         if sample_weights is None:
             X_t = X_ext.transpose()
         else:
-            sample_weights = np.asarray(sample_weights, dtype=X.dtype)
-            self._check_sample_weights(sample_weights, N)
-            X_t = (sample_weights * X_ext).transpose()
+            X_t = ((sample_weights / sample_weights.sum()) * X_ext).transpose()
         if self._ridge_alpha > 0.0:
             l2_reg = self._ridge_alpha * np.identity(P + 1, dtype=X.dtype)
             l2_reg[0, 0] = 0  # Do not regularize intercept
@@ -100,23 +101,63 @@ class LinearRegression:
         else:
             inv = np.linalg.inv(X_t @ X_ext)
         parameters = inv @ X_t @ y
-        self._intercept = parameters[0, 0]
-        self._coefficients = parameters[1:, 0]
         self._parameters = parameters
         return self.parameters
 
-    def predict(self, X):
-        coefficients = self._coefficients
-        if coefficients is None:
+    def _check(self, X, y, sample_weights):
+        X = np.asarray(X, dtype=np.float64)
+        self._check_X(X)
+        y = np.asarray(y, dtype=X.dtype)
+        self._check_y(y, X.shape[0])
+        if sample_weights is not None:
+            sample_weights = np.asarray(sample_weights, dtype=X.dtype)
+            self._check_sample_weights(sample_weights, X.shape[0])
+        return X, y, sample_weights
+
+    def _check_against(self, X, y=None, sample_weights=_NO_SAMPLE_WEIGHTS, /):
+        parameters = self._parameters
+        if parameters is None:
             raise RuntimeError("Model not fitted to any data.")
-        X = np.asarray(X, dtype=coefficients.dtype)
-        if len(X.shape) == 1:
-            try:
-                return X @ coefficients + self._intercept
-            except ValueError:
-                raise ValueError("`X` has an inconsistent dimension.")
-        self._check_X(X, coefficients.shape[0])
-        return X @ coefficients + self._intercept
+        X = np.asarray(X, dtype=parameters.dtype)
+        self._check_X(X, parameters.shape[0] - 1)
+        if y is None:
+            return X
+        y = np.asarray(y, dtype=X.dtype)
+        self._check_y(y, X.shape[0])
+        if sample_weights is _NO_SAMPLE_WEIGHTS:
+            return X, y
+        if sample_weights is not None:
+            sample_weights = np.asarray(sample_weights, X.dtype)
+            self._check_sample_weights(sample_weights, X.shape[0])
+        return X, y, sample_weights
+
+    def _predict(self, X):
+        return X @ self._parameters[1:] + self._parameters[0]
+
+    def predict(self, X):
+        X = self._check_against(X)
+        return self._predict(X)
+
+    def _errors(self, X, y):
+        y_pred = self._predict(X)
+        return y - y_pred
+
+    def errors(self, X, y):
+        X, y = self._check_against(X, y)
+        return self._errors(X, y)
+
+    def _loss(self, X, y, sample_weights):
+        errors = self._errors(X, y)
+        if sample_weights is None:
+            return (errors**2).sum() / errors.shape[0]
+        else:
+            return (sample_weights.flatten() / sample_weights.sum()) @ (
+                errors.flatten() ** 2
+            )
+
+    def loss(self, X, y, sample_weights=None):
+        X, y, sample_weights = self._check_against(X, y, sample_weights)
+        return self._loss(X, y, sample_weights)
 
 
 class StochasticLinearRegression(LinearRegression):
@@ -156,58 +197,42 @@ class StochasticLinearRegression(LinearRegression):
                 raise ValueError("Early stopper must return a boolean.")
         self._early_stopper = early_stopper
 
-    def unset_parameters(self):
-        self._intercept = None
-        self._coefficients = None
-        self._parameters = None
-
-    def fit_step(self, X, y, sample_weights=None):
-        parameters = self.parameters
-        if parameters is None:
-            X = np.asarray(X, dtype=np.float64)
-            self._check_X(X)
-            parameters = np.zeros((X.shape[1] + 1, 1), dtype=X.dtype)
-        else:
-            X = np.asarray(X, dtype=parameters.dtype)
-            self._check_X(X, parameters.shape[0] - 1)
-        y = np.asarray(y, dtype=X.dtype)
-        N = X.shape[0]
-        self._check_y(y, N)
-        y_pred = X @ parameters[1:] + parameters[0]
-        errors = y - y_pred
+    def _fit_step(self, X, y, sample_weights):
+        parameters = self._parameters
+        errors = self._errors(X, y)
         if sample_weights is None:
+            N = X.shape[0]
             intercept_step = errors.sum() / N
             coefficients_step = (X.transpose() @ errors) / N
         else:
-            sample_weights = np.array(sample_weights, dtype=X.dtype)
-            self._check_sample_weights(sample_weights, N)
-            intercept_step = sample_weights.flatten() @ errors.flatten()
+            intercept_step = (
+                sample_weights.flatten() / sample_weights.sum()
+            ) @ errors.flatten()
             coefficients_step = X.transpose() @ (sample_weights * errors)
         if self._ridge_alpha > 0.0:
             coefficients_step[:] -= self._ridge_alpha * parameters[1:]
         parameters[0, 0] += self._learn_step * intercept_step
         parameters[1:] += self._learn_step * coefficients_step
-        self._intercept = parameters[0, 0]
-        self._coefficients = parameters[1:, 0]
-        self._parameters = parameters
         return self.parameters
+
+    def fit_step(self, X, y, sample_weights=None):
+        if self._parameters is None:
+            X, y, sample_weights = self._check(X, y, sample_weights)
+            parameters = np.zeros((X.shape[1] + 1, 1), dtype=X.dtype)
+            self._parameters = parameters
+        else:
+            X, y, sample_weights = self._check_against(X, y, sample_weights)
+        return self._fit_step(X, y, sample_weights)
 
     def fit(self, X, y, num_epochs, batch_size, sample_weights=None):
         if num_epochs < 1:
             raise ValueError("`num_epochs` must be at least 1.")
-        X = np.asarray(X, dtype=np.float64)
-        self._check_X(X)
-        N = X.shape[0]
+        X, y, sample_weights = self._check(X, y, sample_weights)
         if batch_size < 1:
-            batch_size = N
-        y = np.asarray(y, dtype=X.dtype)
-        self._check_y(y, N)
-        if sample_weights is not None:
-            sample_weights = np.asarray(sample_weights, dtype=X.dtype)
-            self._check_sample_weights(sample_weights, N)
+            batch_size = X.shape[0]
         self.unset_parameters()
-        indexes = ArrayDataset(np.arange(N))
-        loss_history = np.empty(num_epochs, dtype=np.float64)
+        indexes = ArrayDataset(np.arange(X.shape[0]))
+        loss_history = np.empty(num_epochs, dtype=X.dtype)
         for i in range(num_epochs):
             for batch in indexes.batch_iter(batch_size):
                 X_train = X[batch]
@@ -217,11 +242,7 @@ class StochasticLinearRegression(LinearRegression):
                 )
                 self.fit_step(X_train, y_train, sample_weights_train)
             parameters = self.parameters
-            y_pred = X @ parameters[1:] + parameters[0]
-            if sample_weights is None:
-                loss = ((y - y_pred) ** 2).sum() / N
-            else:
-                loss = sample_weights.flatten() @ ((y - y_pred).flatten() ** 2)
+            loss = self._loss(X, y, sample_weights)
             loss_history[i] = loss
             if self._early_stopper is not None:
                 loss_history_seg = loss_history[: (i + 1)]
