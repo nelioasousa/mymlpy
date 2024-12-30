@@ -37,14 +37,12 @@ def test_linear_regression(ridge_alpha, generate_weights, random_linear_dataset)
     if generate_weights:
         sample_weights = np.random.randint(1, 5, X_train.shape[0])
         sample_weights = sample_weights / sample_weights.sum()
-    y_train, _ = split_data(y, proportions=proportions)
+    y_train, y_test = split_data(y, proportions=proportions)
     regressor = LinearRegression(ridge_alpha=ridge_alpha)
     regressor.fit(X_train, y_train, sample_weights=sample_weights)
-    y_pred = regressor.predict(X_test)
-    y_real = X_test @ coefficients.reshape((-1, 1)) + intercept
-    error = ((y_pred - y_real) ** 2).sum() / X_test.shape[0]
+    loss = regressor.loss(X_test, y_test)
     # TODO: what test to perform?
-    assert error >= 0.0
+    assert loss >= 0.0
 
 
 @pytest.mark.parametrize(
@@ -62,7 +60,7 @@ def test_stochastic_linear_regression(
     intercept, coefficients, X, y, irreducible_error = random_linear_dataset
     proportions = (0.7, 0.3)
     X_train, X_test = split_data(X, proportions=proportions)
-    y_train, _ = split_data(y, proportions=proportions)
+    y_train, y_test = split_data(y, proportions=proportions)
     sample_weights = None
     if generate_weights:
         sample_weights = np.random.randint(1, 5, X_train.shape[0])
@@ -75,8 +73,6 @@ def test_stochastic_linear_regression(
         batch_size=50,
         sample_weights=sample_weights,
     )
-    y_pred = regressor.predict(X_test)
-    y_real = X_test @ coefficients.reshape((-1, 1)) + intercept
-    error = ((y_pred - y_real) ** 2).sum() / X_test.shape[0]
+    loss = regressor.loss(X_test, y_test)
     # TODO: what test to perform?
-    assert error >= 0.0
+    assert loss >= 0.0
