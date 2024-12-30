@@ -205,9 +205,8 @@ class StochasticLinearRegression(LinearRegression):
             intercept_step = errors.sum() / N
             coefficients_step = (X.transpose() @ errors) / N
         else:
-            intercept_step = (
-                sample_weights.flatten() / sample_weights.sum()
-            ) @ errors.flatten()
+            sample_weights = sample_weights / sample_weights.sum()
+            intercept_step = sample_weights.flatten() @ errors.flatten()
             coefficients_step = X.transpose() @ (sample_weights * errors)
         if self._ridge_alpha > 0.0:
             coefficients_step[:] -= self._ridge_alpha * parameters[1:]
