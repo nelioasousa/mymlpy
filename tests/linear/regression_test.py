@@ -3,6 +3,7 @@ import numpy as np
 
 from mymlpy.linear.regression import LinearRegression, StochasticLinearRegression
 from mymlpy.datasets import split_data
+from mymlpy.datasets.normalizers import ZScoreNormalizer
 
 
 @pytest.fixture
@@ -30,17 +31,22 @@ def random_linear_dataset():
     ((0.0, False), (0.0, True), (0.02, False), (0.02, True)),
 )
 def test_linear_regression(ridge_alpha, generate_weights, random_linear_dataset):
-    intercept, coefficients, X, y, irreducible_error = random_linear_dataset
+    _, _, X, y, _ = random_linear_dataset
     proportions = (0.7, 0.3)
     X_train, X_test = split_data(X, proportions=proportions)
+    y_train, y_test = split_data(y, proportions=proportions)
     sample_weights = None
     if generate_weights:
         sample_weights = np.random.randint(1, 5, X_train.shape[0])
         sample_weights = sample_weights / sample_weights.sum()
-    y_train, y_test = split_data(y, proportions=proportions)
+    X_normalizer = ZScoreNormalizer(X_train)
+    y_normalizer = ZScoreNormalizer(y_train)
     regressor = LinearRegression(ridge_alpha=ridge_alpha)
-    regressor.fit(X_train, y_train, sample_weights=sample_weights)
-    y_test_pred = regressor.predict(X_test)
+    regressor.fit(
+        X_normalizer(X_train), y_normalizer(y_train), sample_weights=sample_weights
+    )
+    y_test_pred = regressor.predict(X_normalizer(X_test))
+    y_test_pred = y_normalizer.unnormalize(y_test_pred)
     loss = regressor.loss(y_test, y_test_pred)
     # TODO: what test to perform?
     assert loss >= 0.0
@@ -58,7 +64,7 @@ def test_linear_regression(ridge_alpha, generate_weights, random_linear_dataset)
 def test_stochastic_linear_regression(
     learn_step, num_epochs, ridge_alpha, generate_weights, random_linear_dataset
 ):
-    intercept, coefficients, X, y, irreducible_error = random_linear_dataset
+    _, _, X, y, _ = random_linear_dataset
     proportions = (0.7, 0.3)
     X_train, X_test = split_data(X, proportions=proportions)
     y_train, y_test = split_data(y, proportions=proportions)
@@ -66,15 +72,18 @@ def test_stochastic_linear_regression(
     if generate_weights:
         sample_weights = np.random.randint(1, 5, X_train.shape[0])
         sample_weights = sample_weights / sample_weights.sum()
+    X_normalizer = ZScoreNormalizer(X_train)
+    y_normalizer = ZScoreNormalizer(y_train)
     regressor = StochasticLinearRegression(learn_step=learn_step, ridge_alpha=ridge_alpha)
     regressor.fit(
-        X_train,
-        y_train,
+        X_normalizer(X_train),
+        y_normalizer(y_train),
         num_epochs=num_epochs,
         batch_size=50,
         sample_weights=sample_weights,
     )
-    y_test_pred = regressor.predict(X_test)
+    y_test_pred = regressor.predict(X_normalizer(X_test))
+    y_test_pred = y_normalizer.unnormalize(y_test_pred)
     loss = regressor.loss(y_test, y_test_pred)
     # TODO: what test to perform?
     assert loss >= 0.0
