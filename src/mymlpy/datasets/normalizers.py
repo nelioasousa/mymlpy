@@ -49,7 +49,7 @@ class ZScoreNormalizer:
         match = self._match_shape
         if match is None:
             raise RuntimeError("Normalizer not fitted to any data.")
-        data = np.asarray(data, dtype=np.float64)
+        data = np.array(data, dtype=np.float64)
         if data.shape[1:] != match:
             raise ValueError("`data` has inconsistent dimensions.")
         return data
