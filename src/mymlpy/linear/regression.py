@@ -138,16 +138,8 @@ class LinearRegression:
         X = self._check_against(X)
         return self._predict(X)
 
-    def _errors(self, X, y):
-        y_pred = self._predict(X)
-        return y - y_pred
-
-    def errors(self, X, y):
-        X, y = self._check_against(X, y)
-        return self._errors(X, y)
-
-    def _loss(self, X, y, sample_weights):
-        errors = self._errors(X, y)
+    def _loss(self, y, y_pred, sample_weights):
+        errors = y - y_pred
         if sample_weights is None:
             loss = (errors**2).sum() / errors.shape[0]
         else:
@@ -158,9 +150,12 @@ class LinearRegression:
             loss += self._ridge_alpha * (self._parameters[1:] ** 2).sum() / 2
         return loss
 
-    def loss(self, X, y, sample_weights=None):
-        X, y, sample_weights = self._check_against(X, y, sample_weights)
-        return self._loss(X, y, sample_weights)
+    def loss(self, y, y_pred, sample_weights=None):
+        y = np.asarray(y)
+        self._check_y(y, y.shape[0])
+        y_pred = np.asarray(y_pred)
+        self._check_y(y_pred, y.shape[0])
+        return self._loss(y, y_pred, sample_weights)
 
 
 class StochasticLinearRegression(LinearRegression):
@@ -201,8 +196,8 @@ class StochasticLinearRegression(LinearRegression):
         self._early_stopper = early_stopper
 
     def _fit_step(self, X, y, sample_weights):
-        parameters = self._parameters
-        errors = self._errors(X, y)
+        y_pred = self._predict(X)
+        errors = y - y_pred
         if sample_weights is None:
             N = X.shape[0]
             intercept_step = errors.sum() / N
@@ -211,6 +206,7 @@ class StochasticLinearRegression(LinearRegression):
             sample_weights = sample_weights / sample_weights.sum()
             intercept_step = sample_weights.flatten() @ errors.flatten()
             coefficients_step = X.transpose() @ (sample_weights * errors)
+        parameters = self._parameters
         if self._ridge_alpha > 0.0:
             coefficients_step[:] -= self._ridge_alpha * parameters[1:]
         parameters[0, 0] += self._learn_step * intercept_step
