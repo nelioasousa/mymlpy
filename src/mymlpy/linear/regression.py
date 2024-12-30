@@ -149,11 +149,14 @@ class LinearRegression:
     def _loss(self, X, y, sample_weights):
         errors = self._errors(X, y)
         if sample_weights is None:
-            return (errors**2).sum() / errors.shape[0]
+            loss = (errors**2).sum() / errors.shape[0]
         else:
-            return (sample_weights.flatten() / sample_weights.sum()) @ (
+            loss = (sample_weights.flatten() / sample_weights.sum()) @ (
                 errors.flatten() ** 2
             )
+        if self._ridge_alpha > 0.0:
+            loss += self._ridge_alpha * (self._parameters[1:] ** 2).sum() / 2
+        return loss
 
     def loss(self, X, y, sample_weights=None):
         X, y, sample_weights = self._check_against(X, y, sample_weights)
