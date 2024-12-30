@@ -95,7 +95,7 @@ class LinearRegression:
         else:
             X_t = ((sample_weights / sample_weights.sum()) * X_ext).transpose()
         if self._ridge_alpha > 0.0:
-            l2_reg = self._ridge_alpha * np.identity(P + 1, dtype=X.dtype)
+            l2_reg = self._ridge_alpha * np.eye(P + 1, dtype=X.dtype)
             l2_reg[0, 0] = 0  # Do not regularize intercept
             inv = np.linalg.inv((X_t @ X_ext) + l2_reg)
         else:
