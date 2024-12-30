@@ -240,7 +240,8 @@ class StochasticLinearRegression(LinearRegression):
                 )
                 self.fit_step(X_train, y_train, sample_weights_train)
             parameters = self.parameters
-            loss = self._loss(X, y, sample_weights)
+            y_pred = self._predict(X)
+            loss = self._loss(y, y_pred, sample_weights)
             loss_history[i] = loss
             if self._early_stopper is not None:
                 loss_history_seg = loss_history[: (i + 1)]

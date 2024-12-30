@@ -40,7 +40,8 @@ def test_linear_regression(ridge_alpha, generate_weights, random_linear_dataset)
     y_train, y_test = split_data(y, proportions=proportions)
     regressor = LinearRegression(ridge_alpha=ridge_alpha)
     regressor.fit(X_train, y_train, sample_weights=sample_weights)
-    loss = regressor.loss(X_test, y_test)
+    y_test_pred = regressor.predict(X_test)
+    loss = regressor.loss(y_test, y_test_pred)
     # TODO: what test to perform?
     assert loss >= 0.0
 
@@ -73,6 +74,7 @@ def test_stochastic_linear_regression(
         batch_size=50,
         sample_weights=sample_weights,
     )
-    loss = regressor.loss(X_test, y_test)
+    y_test_pred = regressor.predict(X_test)
+    loss = regressor.loss(y_test, y_test_pred)
     # TODO: what test to perform?
     assert loss >= 0.0
