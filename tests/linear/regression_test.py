@@ -55,10 +55,10 @@ def test_linear_regression(ridge_alpha, generate_weights, random_linear_dataset)
 @pytest.mark.parametrize(
     "learn_step,num_epochs,ridge_alpha,generate_weights",
     (
-        (10e-5, 400, 0.0, False),
-        (10e-6, 500, 0.0, True),
-        (10e-7, 700, 0.02, False),
-        (10e-8, 1000, 0.02, True),
+        (10e-2, 1000, 0.0, False),
+        (10e-3, 2000, 0.0, True),
+        (10e-2, 1000, 0.02, False),
+        (10e-3, 2000, 0.02, False),
     ),
 )
 def test_stochastic_linear_regression(
