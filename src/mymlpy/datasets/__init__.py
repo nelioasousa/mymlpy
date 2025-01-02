@@ -1,3 +1,5 @@
+"""Package for handling datasets stored in the local file system."""
+
 from mymlpy.datasets import parsers
 
 from mymlpy.datasets._text_iterator import TextDatasetBatchIterator

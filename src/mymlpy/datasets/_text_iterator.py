@@ -4,6 +4,26 @@ from collections.abc import Sequence
 
 
 class TextDatasetBatchIterator:
+    """Provides batch iteration functionality for tabular datasets.
+
+    Designed for handling out-of-memory datasets and raw datasets that cannot
+    be directly converted to homogeneous numpy arrays. Supports flexible
+    iteration, including forward and backward traversal, and stores file
+    positions of batches to enable faster access during subsequent iterations.
+
+    Attributes:
+
+        `batch_size` (`int`) - Batch size.
+
+        `expand_sequences` (`bool`) - Whether to expand sequences returned by
+        parsers.
+
+        `ignore_errors` (`bool`) - Whether to ignore lines that raises errors.
+
+        `parsers` (`tuple[collections.abc.Callable[[str], typing.Any]]`) -
+        Registered parsers.
+    """
+
     def __init__(
         self,
         file_path,
@@ -14,35 +34,48 @@ class TextDatasetBatchIterator:
         expand_sequences=False,
         ignore_errors=False,
     ):
-        """Provides batch iteration functionality for tabular datasets.
-
-        Designed for handling out-of-memory datasets and raw datasets that cannot be
-        directly converted to homogeneous NumPy arrays. Supports flexible iteration,
-        including forward and backward traversal, and stores file positions of batches
-        to enable faster access during subsequent iterations.
+        """Default initializer.
 
         Arguments:
 
-        `file_path` - Path-like object giving the dataset location in the file system.
+            `file_path` (`Union[str, pathlib.Path]`) - Path-like object giving
+            the dataset location in the file system.
 
-        `batch_size` - Batch size.
+            `batch_size` (`int`) - Batch size.
 
-        `parsers` - Sequence of parsers for each dataset column. A parser is simply a
-        callable that accepts only one positional argument of type string. If the
-        argument can't be understood or isn't a string, `ValueError` must be raised.
+            `parsers` (`typing.Sequence[collections.abc.Callable[[str], typing.Any]]`) -
+            Sequence of parsers for each dataset column. A parser is simply a
+            callable that accepts only one positional argument of type string.
+            If the  argument can't be understood or isn't a string,
+            `ValueError` must be raised.
 
-        `separator` - String that separates each column in a row/line of data.
+            `separator` (`str`) - String that separates each column in a
+            row/line of data.
 
-        `skip_lines` - Skip the first n lines of the dataset file.
+            `skip_lines` (`int`) - Skip the first `skip_lines` lines of the
+            dataset file.
 
-        `expand_sequences` - If set to True, any sequence outputted by a parser (other
-        than a string or a bytes object) is expanded/unfolded. No dimension consistency
-        check is performed after expansion. When `expand_sequences` is True, the size of
-        each entry in a batch or between batches may vary depending on the parsers
-        provided.
+            `expand_sequences` (`bool`) - If set to `True`, any sequence
+            outputted by a parser (other than `str` and `bytes` objects) is
+            expanded/unfolded. No dimension consistency check is performed
+            after expansion. When `expand_sequences` is `True`, the size of
+            each entry in a batch or between batches may vary depending on the
+            parsers provided.
 
-        `ignore_errors` - Skip lines that are inconsistent with the number of parsers or
-        raises `ValueError` during parsing.
+            `ignore_errors` (`bool`) - If set to `False`, errors encountered
+            during iteration are raised. If set to `True`, the lines that
+            raised those errors are skipped and no exception is raised. The
+            errors that this argument applyes to are parsers `ValueError`s
+            and `RuntimeError`s raised from inconsistent line entries (lines
+            with more elements to parse than parsers available).
+
+        Returns:
+
+            `None` - `self` is initialized and nothing is returned.
+
+        Raises:
+
+            `ValueError` - If an invalid parser is encountered in `parsers`.
         """
         self._file_path = Path(file_path).resolve()
         self._separator = str(separator)
@@ -60,6 +93,7 @@ class TextDatasetBatchIterator:
 
     @property
     def batch_size(self):
+        """Batch size."""
         return self._batch_size
 
     @batch_size.setter
@@ -76,6 +110,7 @@ class TextDatasetBatchIterator:
 
     @property
     def ignore_errors(self):
+        """Whether to ignore lines that raises errors."""
         return self._ignore_errors
 
     @ignore_errors.setter
@@ -84,6 +119,7 @@ class TextDatasetBatchIterator:
 
     @property
     def expand_sequences(self):
+        """Whether to expand sequences returned by parsers."""
         return self._expand_sequences
 
     @expand_sequences.setter
@@ -92,6 +128,7 @@ class TextDatasetBatchIterator:
 
     @property
     def parsers(self):
+        """Registered parsers."""
         return self._parsers
 
     @parsers.setter
@@ -129,16 +166,27 @@ class TextDatasetBatchIterator:
         return False
 
     def __iter__(self):
+        """Implement iter(self)."""
         return self
 
     def iter_with_batch_size(self, batch_size):
         """Reset the iterator with a different batch size.
 
-        Position information is discarded independently of the `batch_size` value.
+        Position information is discarded independently of the `batch_size`
+        value.
 
         Arguments:
 
-        `batch_size` - Batch size.
+            `batch_size` (`int`) - Batch size.
+
+        Returns:
+
+            Return `self`.
+
+        Raises:
+
+            `RuntimeError` - When no `with` context exists when the method is
+            called.
         """
         self._assert_open_context()
         self._batch_size = batch_size
@@ -150,13 +198,29 @@ class TextDatasetBatchIterator:
 
         Arguments:
 
-        `clear_batch_positions` - Whether to clear position information before iteration.
+            `clear_batch_positions` (`bool`) - Whether to clear position
+            information before iteration.
+
+        Returns:
+
+            Return `self`.
+
+        Raises:
+
+            `RuntimeError` - When no `with` context exists when the method is
+            called.
         """
         self._assert_open_context()
         self._reset_iterator(clear_batch_positions=clear_batch_positions)
         return self
 
     def __next__(self):
+        """Implement next(self).
+
+        Raises:
+
+            `StopIteration` - Signal the end of the iterator.
+        """
         self._assert_open_context()
         batch = []
         self._seek_batch_position(self._next_batch_index)
@@ -207,8 +271,18 @@ class TextDatasetBatchIterator:
 
         Arguments:
 
-        `dtype` - If `None` the raw batch (a python `list` object) is returned. Otherwise
-        should be a valid numpy dtype so as the batch to be returned as a numpy array.
+            `dtype` (`numpy.typing.DTypeLike`) - If `None` the raw batch (a
+            python `list` object) is returned. Otherwise should be a valid
+            numpy dtype so as the batch to be returned as a numpy array.
+
+        Returns:
+
+            `Union[None, list[list[typing.Any]], numpy.ndarray]` - The last
+            outputted batch.
+
+        Raises:
+
+            No exception is directly raised.
         """
         if dtype is not None and self._batch is not None:
             return np.array(self._batch, dtype=dtype)
@@ -219,12 +293,22 @@ class TextDatasetBatchIterator:
 
         The batch landed at is returned.
 
-        Raises `StopIteration`.
-
         Arguments:
 
-        `num_batches` - How many batchs to advance over. The current batch is counted.
-        Non-positive `num_batches` is a no-op and returns `None`.
+            `num_batches` (`int`) - How many batchs to advance over. The
+            current batch is counted. Non-positive `num_batches` is a no-op
+            and returns `None`.
+
+        Returns:
+
+            `Union[None, list[list[typing.Any]]]` - The raw batch landed at.
+
+        Raises:
+
+            `StopIteration` - Signal the end of the iterator.
+
+            `RuntimeError` - When no `with` context exists when the method is
+            called.
         """
         self._assert_open_context()
         if num_batches < 1:
@@ -240,14 +324,24 @@ class TextDatasetBatchIterator:
     def retreat(self, num_batches=1):
         """Retreat `num_batches` from the actual batch.
 
-        The batch landed at is returned. `self.retreat()` doesn't wrap around. If a large
-        enough value is supplied by `num_batches`, the iteartor is reseted and `None`
-        is returned.
+        The batch landed at is returned. `self.retreat()` doesn't wrap around.
+        If a large enough value is supplied by `num_batches`, the iteartor is
+        reseted and `None` is returned.
 
         Arguments:
 
-        `num_batches` - How many batchs to go back over. The current batch is counted.
-        Non-positive `num_batches` is a no-op and returns `None`.
+            `num_batches` (`int`) - How many batchs to go back over. The
+            current batch is counted. Non-positive `num_batches` is a no-op
+            and returns `None`.
+
+        Returns:
+
+            `Union[None, list[list[typing.Any]]]` - The raw batch landed at.
+
+        Raises:
+
+            `RuntimeError` - When no `with` context exists when the method is
+            called.
         """
         self._assert_open_context()
         if num_batches < 1:
@@ -257,13 +351,22 @@ class TextDatasetBatchIterator:
     def goto(self, batch_index):
         """Go to any batch based on it's index and return it.
 
-        Raises `StopIteration`.
-
         Arguments:
 
-        `batch_index` - 0-based index of the batch to go to. Negative valeus for
-        `batch_index` resets the iterator at it's beginning, being equivalent to a call
-        to `self.iter()`.
+            `batch_index` (`int`) - 0-based index of the batch to go to.
+            Negative valeus for `batch_index` resets the iterator at it's
+            beginning, being equivalent to a call to `self.iter()`.
+
+        Returns:
+
+            `Union[None, list[list[typing.Any]]]` - The raw batch landed at.
+
+        Raises:
+
+            `StopIteration` - Signal the end of the iterator.
+
+            `RuntimeError` - When no `with` context exists when the method is
+            called.
         """
         self._assert_open_context()
         if batch_index < 0:
@@ -277,7 +380,16 @@ class TextDatasetBatchIterator:
         return next(self)
 
     def clear_batch_positions(self):
-        """Clear stored batch positions."""
+        """Clear stored batch positions.
+
+        Returns:
+
+            `None` - Nothing is returned.
+
+        Raises:
+
+            No exception is directly raised.
+        """
         self._batch_positions.clear()
 
     def _reset_iterator(self, clear_batch_positions=False):

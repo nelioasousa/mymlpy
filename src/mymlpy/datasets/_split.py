@@ -32,26 +32,39 @@ def _process_proportions(target_size, proportions):
 
 
 def split_data(data, proportions, shuffle=False, categorizer=None, return_copies=False):
-    """Split array based on proportions.
+    """Split data based on proportions.
 
     Arguments:
 
-    `data` - Data to split. If not a numpy array, one is constructed based on `data`.
-    Can't be empty.
+        `data` (`numpy.typing.ArrayLike`) - Data to split. If not a numpy
+        array, one is constructed based on `data`. Can't be empty.
 
-    `proportions` - Proportions for each split set. If the proportions sum to less than
-    1.0, the last proportion is inferred to make the total equal to 1.0. If the
-    proportions exceed 1.0, a `ValueError` is raised.
+        `proportions` (`typing.Sequence[numbers.Real]`) - Proportions for each
+        split set. If the proportions sum to less than 1.0, the last proportion
+        is inferred to make the total equal to 1.0.
 
-    `shuffle` - Whether to shuffle `data` in-place before splitting. If `data` isn't a
-    numpy array, it will be copied into one and this copy that will be shuffled.
+        `shuffle` (`bool`) - Whether to shuffle `data` in-place before
+        splitting. If `data` isn't a numpy array, it will be copied into one
+        and this copy that will be shuffled.
 
-    `categorizer` - A callable that returns a unique hashable object for each category
-    present in `data`. `categorizer` will be called for each entry in `data` and receive
-    it as the only and first positional argument and must return a hashable value
-    representing the entry's category.
+        `categorizer` (`collections.abc.Callable[[numpy.ndarray], typing.Hashable]`) -
+        A callable that returns a unique hashable object for each entry present
+        in `data`. `categorizer` will be called once for each entry in `data`
+        and receive it as the first and only positional argument and
+        must return a hashable value representing the entry's category.
 
-    `return_copies` - Whether to return the splits as copies or views of `data`.
+        `return_copies` (`bool`) - Whether to return the splits as copies or
+        views of `data`.
+
+    Returns:
+
+        `tuple[numpy.ndarray]` - The `data` splits.
+
+    Raises:
+
+        `ValueError` - Raised when `data` is empty, `proportions` contains
+        negative values, or when `proportions` sum to a total greater than
+        1.0.
     """
     data = np.asarray(data)
     proportions = _check_proportions(data.shape[0], proportions)
@@ -106,9 +119,16 @@ class _SplitsIterator:
         self._next = 0
 
     def __iter__(self):
+        """Implement iter(self)."""
         return self
 
     def __next__(self):
+        """Implement next(self).
+
+        Raises:
+
+            `StopIteration` - Signal the end of the iterator.
+        """
         try:
             test_indexes = self._splits[self._next]
         except IndexError:
@@ -123,8 +143,21 @@ class _SplitsIterator:
 class KFold:
     """K-fold cross validation.
 
-    Stratified folding is not reliable for very small datasets with categories that have
-    fewer entries than the number of folds.
+    Stratified folding is not reliable for very small datasets with categories
+    that have fewer entries than the number of folds.
+
+    Attributes:
+
+        `data` (`numpy.ndarray`) - Underlying tabular data for cross validation
+        splitting.
+
+        `k` (`int`) - Number of folds.
+
+        `categorizer` (`collections.abc.Callable[[numpy.ndarray], typing.Hashable]`) -
+        Entry categorizer for stratified folding.
+
+        `return_copies` (`bool`) - Whether to return the folds as copies of the
+        underlying data.
     """
 
     def __init__(self, data, k, shuffle=False, categorizer=None, return_copies=False):
@@ -132,20 +165,32 @@ class KFold:
 
         Arguments:
 
-        `data` - Data to be splitted in folds. If not a numpy array, one is constructed
-        based on `data`. Can't be empty.
+            `data` (`numpy.typing.ArrayLike`) - Data to be splitted in folds.
+            If not a numpy array, one is constructed based on `data`. Can't be
+            empty.
 
-        `k` - Number of folds to split `data`.
+            `k` (`int`) - Number of folds to split `data`.
 
-        `shuffle` - Whether to shuffle `data` in-place before splitting. If `data` isn't
-        a numpy array, it will be copied into one and this copy that will be shuffled.
+            `shuffle` (`bool`) - Whether to shuffle `data` in-place before
+            splitting. If `data` isn't a numpy array, it will be copied into
+            one and this copy that will be shuffled.
 
-        `categorizer` - A callable that returns a unique hashable object for each
-        category present in `data`. `categorizer` will be called for each entry in `data`
-        and receive it as the only and first positional argument and must return a
-        hashable value representing the entry's category.
+            `categorizer` (`collections.abc.Callable[[numpy.ndarray], typing.Hashable]`) -
+            A callable that returns a unique hashable object for each entry
+            present in `data`. `categorizer` will be called once for each entry
+            in `data` and receive it as the first and only positional argument
+            and must return a hashable value representing the entry's category.
 
-        `return_copies` - Whether to return the splits as copies or views.
+            `return_copies` (`bool`) - Whether to return the folds as copies of
+            the underlying data.
+
+        Returns:
+
+            `None` - `self` is initialized and nothing is returned.
+
+        Raises:
+
+            `ValueError` - Raised when `data` is empty, or `k` is less than 2.
         """
         # Start public
         self.data = data
@@ -159,6 +204,7 @@ class KFold:
 
     @property
     def data(self):
+        """Underlying tabular data for cross validation splitting."""
         return self._data
 
     @data.setter
@@ -171,6 +217,7 @@ class KFold:
 
     @property
     def k(self):
+        """Number 'k' of folds."""
         return self._k
 
     @k.setter
@@ -189,6 +236,7 @@ class KFold:
 
     @property
     def categorizer(self):
+        """Entry categorizer for stratified folding."""
         return self._categorizer
 
     @categorizer.setter
@@ -206,6 +254,7 @@ class KFold:
 
     @property
     def return_copies(self):
+        """Whether to return the folds as copies of the underlying data."""
         return self._return_copies
 
     @return_copies.setter
@@ -250,6 +299,17 @@ class KFold:
             self.prepare_folds()
 
     def __iter__(self):
+        """Implement iter(self).
+
+        Returns:
+
+            `typing.Iterator[tuple[numpy.ndarray, numpy.ndarray]]` - KFold
+            iterator object.
+
+        Raises:
+
+            No exception is directly raised.
+        """
         self._check_folds()
         return _SplitsIterator(
             data=self._data, splits=self._folds, return_copies=self._return_copies
@@ -259,20 +319,29 @@ class KFold:
         """Generate folds.
 
         This method is mostly intended for internal use and is typically called
-        automatically. Direct usage is discouraged except in advanced or specific
-        scenarios.
+        automatically. Direct usage is discouraged except in advanced or
+        specific scenarios.
 
         This method is automatically called:
 
         1. During instance initialization.
 
-        2. Immediately before iteration when changes in the internal state of the
-        instance have been made: resetting of the number `k` of fold, of the
-        `categorizer`, or/and of the underlying `data`.
+        2. Immediately before iteration when changes in the internal state of
+        the instance have been made: resetting of the number `k` of fold, of
+        the `categorizer`, or/and of the underlying `data`.
 
         Arguments:
 
-        `shuffle` - Whether to shuffle `self.data` in-place before splitting.
+            `shuffle` (`bool`) - Whether to shuffle `self.data` in-place before
+            splitting.
+
+        Returns:
+
+            `None` - Nothing is returned.
+
+        Raises:
+
+            No exception is directly raised.
         """
         if shuffle:
             np.random.shuffle(self._data)
@@ -285,11 +354,18 @@ class KFold:
     def get_split(self, split_index):
         """Get (train, test) split at index `split_index`.
 
-        Raise `IndexError` if `split_index` isn't a valid index.
-
         Arguments:
 
-        `split_index` - 0-based index of the split.
+            `split_index` (`int`) - 0-based index of the split.
+
+        Returns:
+
+            `tuple[numpy.ndarray, numpy.ndarray]` - Train and test splits at
+            index `split_index`.
+
+        Raises:
+
+            `IndexError` - If `split_index` isn't a valid index.
         """
         self._check_folds()
         test_indexes = self._folds[split_index]
@@ -301,11 +377,17 @@ class KFold:
     def get_fold(self, fold_index):
         """Get fold (split's test array) at index `fold_index`.
 
-        Raise `IndexError` if `fold_index` isn't a valid index.
-
         Arguments:
 
-        `fold_index` - 0-based index of the fold.
+            `fold_index` (`int`) - 0-based index of the split.
+
+        Returns:
+
+            `numpy.ndarray` - Data fold at index `fold_index`.
+
+        Raises:
+
+            `IndexError` - If `fold_index` isn't a valid index.
         """
         self._check_folds()
         fold_indexes = self._folds[fold_index]

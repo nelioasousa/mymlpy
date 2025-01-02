@@ -2,20 +2,33 @@ import numpy as np
 
 
 class ArrayBatchIterator:
-    """Implement batch iteration over numpy arrays."""
+    """Batch iteration functionality for numpy arrays.
+
+    Attributes:
+
+        No public attributes.
+    """
 
     def __init__(self, data, batch_size, return_copies=False):
-        """`ArrayBatchIterator` default initializer.
+        """Default initializer.
 
         Arguments:
 
-        `data` - Data to be iterated over. If not a numpy array, one is constructed based
-        on `data`.
+            `data` (`numpy.typing.ArrayLike`) - Data to be iterated over. If
+            not a numpy array, one is constructed based on `data`.
 
-        `batch_size` - Size of the batch returned.
+            `batch_size` (`int`) - Size of the batch returned.
 
-        `return_copies` - Whether to return the batches as copies or views of the
-        underlying numpy array.
+            `return_copies` (`bool`) - Whether to return the batches as copies
+            or views of the underlying numpy array.
+
+        Returns:
+
+            `None` - `self` is initialized and nothing is returned.
+
+        Raises:
+
+            No exception is directly raised.
         """
         try:
             data = np.asarray(data, copy=False)
@@ -29,9 +42,16 @@ class ArrayBatchIterator:
         self._start = 0
 
     def __iter__(self):
+        """Implement iter(self)."""
         return self
 
     def __next__(self):
+        """Implement next(self).
+
+        Raises:
+
+            `StopIteration` - Signal the end of the iterator.
+        """
         if self._start >= self._data.shape[0]:
             raise StopIteration()
         end = self._start + self._batch_size
@@ -43,35 +63,75 @@ class ArrayBatchIterator:
 
 
 class ArrayDataset:
-    """Utility wrapper for numpy arrays representing tabular datasets."""
+    """Utility wrapper for numpy arrays representing tabular datasets.
+
+    Attributes:
+
+        `data` (`numpy.ndarray`) - Underlying tabular dataset.
+    """
 
     def __init__(self, data, dtype=None, copy=None):
         """`ArrayDataset` default initializer.
 
         Arguments:
 
-        `data` - Array dataset to be wrapped.
+            `data` (`numpy.typing.ArrayLike`) - Tabular dataset to be wrapped.
 
-        `dtype` - Which numpy dtype to use. Default is `None`, meaning the dtype is
-        infered by numpy.
+            `dtype` (`numpy.typing.DTypeLike`) - Which numpy dtype to use.
+            Default is `None`, meaning the dtype is infered by numpy.
 
-        `copy` - Whether to wrap a copy of `data`. Default is `None`, meaning that `data`
-        is only copied if necessary.
+            `copy` (`bool`) - Whether to wrap a copy of `data`. Default is
+            `None`, meaning that `data` is only copied if necessary.
+
+        Returns:
+
+            `None` - `self` is initialized and nothing is returned.
+
+        Raises:
+
+            No exception is directly raised.
         """
         # Start public
         self.set_data_as(data=data, dtype=dtype, copy=copy)
         # End public
 
     def set_data_as(self, data, dtype=None, copy=None):
-        """Set underlying/wrapped numpy array."""
+        """Set underlying/wrapped tabular dataset as a numpy array.
+
+        Arguments:
+
+            See the initializer for the meaning of the arguments.
+
+        Returns:
+
+            `None` - Set `self.data` and return `None`.
+
+        Raises:
+
+            No exception is directly raised.
+        """
         self._data = np.asarray(data, dtype=dtype, copy=copy)
 
     def get_data_as(self, dtype=None, copy=None):
-        """Get underlying/wrapped numpy array."""
+        """Get underlying/wrapped tabular dataset as a numpy array.
+
+        Arguments:
+
+            See the initializer for the meaning of the arguments.
+
+        Returns:
+
+            `numpy.typing.ArrayLike` - Underlying/wrapped tabular dataset.
+
+        Raises:
+
+            No exception is directly raised.
+        """
         return np.asarray(self._data, dtype=dtype, copy=copy)
 
     @property
     def data(self):
+        """Underlying/wrapped tabular dataset."""
         return self._data
 
     @data.setter
@@ -79,22 +139,32 @@ class ArrayDataset:
         self._data = np.asarray(value)
 
     def __iter__(self):
+        """Implement iter(self)."""
         return iter(self._data)
 
     def iter(self, batch_size=None, shuffle=False, return_copies=False):
-        """Return an iterator for the wrapped data array.
+        """Build and return an iterator over the wrapped tabular dataset.
 
         Arguments:
 
-        `batch_size` - Size of the batch to return. Default is `None`, meaning that
-        `iter(data)` is returned if `return_copies` is `False`, or `iter(np.copy(data))`
-        is returned if `return_copies` is `True`.
+            `batch_size` (`int`) - Size of the iteration batch. Default is
+            `None`, meaning that `iter(self)` is returned if `return_copies` is
+            `False`, or `iter(np.copy(self))` is returned if `return_copies` is
+            `True`.
 
-        `shuffle` - Whether to shuffle the underlying/wrapped numpy array before
-        iteration.
+            `shuffle` (`bool`) - Whether to shuffle the underlying/wrapped
+            numpy array before iteration.
 
-        `return_copies` - Whether to return the iteration entries as copies or views of
-        the underlying numpy array.
+            `return_copies` (`bool`) - Whether to return the iteration entries
+            as copies or views of the underlying numpy array.
+
+        Returns:
+
+            `typing.Iterator[numpy.ndarray]` - Iterator object.
+
+        Raises:
+
+            No exception is directly raised.
         """
         if shuffle:
             np.random.shuffle(self._data)
@@ -109,17 +179,7 @@ class ArrayDataset:
     def batch_iter(self, batch_size, shuffle=True, return_copies=False):
         """Fall back to `self.iter(...)` with different defaults.
 
-        Arguments:
-
-        `batch_size` - Size of the batch to return. If set to `None`, `iter(data)` is
-        returned if `return_copies` is `False`, or `iter(np.copy(data))` is returned if
-        `return_copies` is `True`.
-
-        `shuffle` - Whether to shuffle the underlying/wrapped numpy array before
-        iteration.
-
-        `return_copies` - Whether to return the iteration entries as copies or views of
-        the underlying numpy array.
+        See `self.iter()` for more informations.
         """
         return self.iter(
             batch_size=batch_size, shuffle=shuffle, return_copies=return_copies
