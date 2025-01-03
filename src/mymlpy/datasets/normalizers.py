@@ -95,8 +95,9 @@ class ZScoreNormalizer:
 
             `ValueError` - When `data` is empty.
         """
-        # TODO: not allow empty arrays
         data = np.asarray(data)
+        if not data.shape or not data.shape[0]:
+            raise ValueError("`data` can't be empty.")
         self._means = data.mean(axis=0, dtype=np.float64)
         self._stds = data.std(axis=0, dtype=np.float64)
         self._match_shape = self._means.shape
