@@ -6,14 +6,16 @@ import numpy as np
 class ZScoreNormalizer:
     """Implement '0 mean' and '1 standard deviation' normalization.
 
+    Normalization is performed along the first axis.
+
     Attributes:
 
         `means` (`numpy.ndarray`) - Normalization means.
 
         `stds` (`numpy.ndarray`) - Normalization standard deviations.
 
-        `match_shape` (`tuple[int]`) - Shape that the data must matched during
-        normalization.
+        `match_shape` (`tuple[int]`) - Array shape that must be mastched during
+        normalization/unnormalization.
     """
 
     def __init__(self, data=None):
@@ -64,7 +66,12 @@ class ZScoreNormalizer:
 
     @property
     def match_shape(self):
-        """Shape that the data must matched during normalization."""
+        """Array shape that must be matched during
+        normalization/unnormalization.
+
+        For an array to be adequate for normalization/unnormalization, it's
+        last dimensions starting from the second must match `self.match_shape`.
+        """
         return self._match_shape
 
     @match_shape.setter
