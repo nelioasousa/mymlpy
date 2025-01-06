@@ -45,8 +45,8 @@ Package for handling datasets stored in the local file system.
 
 > Split data based on proportions.
 
-`class TextDatasetBatchIterator(file_path, batch_size, parsers, separator=',', skip_lines=0, expand_sequences=False, ignore_errors=False)`
-
+> `class TextDatasetBatchIterator(file_path, batch_size, parsers, separator=',', skip_lines=0, expand_sequences=False, ignore_errors=False)`
+>
 > Provides batch iteration functionality for tabular datasets.
 >
 > Designed for handling out-of-memory datasets and raw datasets that cannot
