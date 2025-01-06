@@ -1,3 +1,5 @@
+"""Non-linear activation functions."""
+
 import numpy as np
 
 

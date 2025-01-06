@@ -1,3 +1,5 @@
+"""Linear regression models."""
+
 import numpy as np
 
 from mymlpy.datasets import ArrayDataset
@@ -7,7 +9,37 @@ _NO_SAMPLE_WEIGHTS = object()
 
 
 class LinearRegression:
+    """Linear regression using Ordinary Least Squares (OLS).
+
+    Attributes:
+
+        `ridge_alpha` (`float`) - Ridge regression coefficient (weight decay).
+
+        `intercept` (`Union[None, numpy.float64]`) - Line/hyperplane intercept.
+
+        `coefficients` (`Union[None, numpy.ndarray[numpy.float64]]`) -
+        Line/hyperplane coefficients.
+
+        `parameters` (`Union[None, numpy.ndarray[numpy.float64]]`) - Model
+        parameters as a column vector, starting with the intercept.
+    """
+
     def __init__(self, ridge_alpha=0.0):
+        """Default initializer.
+
+        Arguments:
+
+            `ridge_alpha` (`float`) - Ridge regression coefficient (weight
+            decay).
+
+        Returns:
+
+            `None` - `self` is initialized and nothing is returned.
+
+        Raises:
+
+            `ValueError` - If `ridge_alpha` is negative.
+        """
         # Start public
         self.ridge_alpha = ridge_alpha
         # End public
@@ -15,6 +47,7 @@ class LinearRegression:
 
     @property
     def ridge_alpha(self):
+        """Ridge regression coefficient (weight decay)."""
         return self._ridge_alpha
 
     @ridge_alpha.setter
@@ -26,6 +59,7 @@ class LinearRegression:
 
     @property
     def intercept(self):
+        """Line/hyperplane intercept."""
         if self._parameters is None:
             return None
         return self._parameters[0, 0]
@@ -36,6 +70,7 @@ class LinearRegression:
 
     @property
     def coefficients(self):
+        """Line/hyperplane coefficients."""
         if self._parameters is None:
             return None
         return np.copy(self._parameters[1:, 0])
@@ -46,6 +81,7 @@ class LinearRegression:
 
     @property
     def parameters(self):
+        """Model parameters as a column vector, starting with the intercept."""
         if self._parameters is None:
             return None
         return np.copy(self._parameters)
@@ -55,6 +91,7 @@ class LinearRegression:
         raise AttributeError("Read-only attribute.")
 
     def unset_parameters(self):
+        """Set `self.parameters` to `None`, 'unfitting' the model."""
         self._parameters = None
 
     def _check_X(self, X, features_dim=None):
@@ -89,6 +126,30 @@ class LinearRegression:
         # sample_weights[:] = sample_weights / sample_weights.sum()
 
     def fit(self, X, y, sample_weights=None):
+        """Fit model to data.
+
+        Arguments:
+
+            `X` (`numpy.typing.ArrayLike`) - Training observations (features,
+            regressor, predictors).
+
+            `y` (`numpy.typing.ArrayLike`) - Training labels (result, target,
+            response).
+
+            `sample_weights` (`Union[None, numpy.typing.ArrayLike]`) -
+            Training entries weights.
+
+        Returns:
+
+            `self.parameters` (`numpy.ndarray[numpy.float64]`) - The model
+            parameters after the fit.
+
+        Raises:
+
+            `ValueError` - If `X` is empty, `X` isn't a 2D-array, `y` or
+            `sample_weights` aren't flat arrays or column vectors or aren't
+            compatible with `X`.
+        """
         X, y, sample_weights = self._check(X, y, sample_weights)
         N, P = X.shape
         X_ext = np.concatenate((np.ones((N, 1), dtype=X.dtype), X), axis=1)
@@ -137,6 +198,24 @@ class LinearRegression:
         return X @ self._parameters[1:] + self._parameters[0]
 
     def predict(self, X):
+        """Predict the response for the input `X`.
+
+        Arguments:
+
+            `X` (`numpy.typing.ArrayLike`) - Training observations (features,
+            regressor, predictors).
+
+        Returns:
+
+            `numpy.ndarray[numpy.float64]` - Model response as a column vector.
+
+        Raises:
+
+            `RuntimeError` - When `self` isn't fitted to any data.
+
+            `ValueError` - If `X` isn't a non-empty 2D-array compatible with
+            `self.parameters`.
+        """
         X = self._check_against(X)
         return self._predict(X)
 
@@ -153,6 +232,29 @@ class LinearRegression:
         return loss
 
     def loss(self, y, y_pred, sample_weights=None):
+        """Mean Squared Error (MSE) loss.
+
+        Arguments:
+
+            `y` (`numpy.typing.ArrayLike`) - Target response.
+
+            `y_pred` (`numpy.typing.ArrayLike`) - Predicted response.
+
+            `sample_weights` (`Union[None, numpy.typing.ArrayLike]`) -
+            Entries weights.
+
+        Returns:
+
+            `numpy.float64` - Loss value.
+
+        Raises:
+
+            `RuntimeError` - When `self` isn't fitted to any data.
+
+            `ValueError` - If `y` is empty, or isn't a flat array or column
+            vector. If `y_pred` or `sample_weights` aren't compatible with `y`.
+        """
+        # TODO: check if y is empty
         y = np.asarray(y)
         self._check_y(y, y.shape[0])
         y_pred = np.asarray(y_pred)
@@ -161,13 +263,57 @@ class LinearRegression:
 
 
 class StochasticLinearRegression(LinearRegression):
+    """Linear regression using Stochastic Gradient Descent (SGD).
+
+    Attributes:
+
+        `ridge_alpha` (`float`) - Ridge regression coefficient (weight decay).
+
+        `intercept` (`Union[None, numpy.float64]`) - Line/hyperplane intercept.
+
+        `coefficients` (`Union[None, numpy.ndarray[numpy.float64]]`) -
+        Line/hyperplane coefficients.
+
+        `parameters` (`Union[None, numpy.ndarray[numpy.float64]]`) - Model
+        parameters as a column vector, starting with the intercept.
+
+        `learn_step` (`float`) - Training learn step.
+
+        `early_stopper` (`Union[None, collections.abc.Callable[[numpy.ndarray[numpy.float64]], bool]]`) -
+        Callable used for early stopping.
+    """
+
     def __init__(self, learn_step, ridge_alpha=0.0, early_stopper=None):
+        """Default initializer.
+
+        Arguments:
+
+            `learn_step` (`float`) - Training learn step.
+
+            `ridge_alpha` (`float`) - Ridge regression coefficient (weight
+            decay).
+
+            `early_stopper` (`Union[None, collections.abc.Callable[[numpy.ndarray[numpy.float64]], bool]]`) -
+            Callable used for early stopping. The loss history is passed as a
+            positional argument, and the callable must return a boolean
+            indicating whether training should stop (`True` to stop).
+
+        Return:
+
+            `None` - `self` is initialized and nothing is returned.
+
+        Raises:
+
+            `ValueError` - If `ridge_alpha` is negative, if `learn_step` isn't
+            positive, or if `early_stopper` is invalid.
+        """
         super().__init__(ridge_alpha)
         self.learn_step = learn_step
         self.early_stopper = early_stopper
 
     @property
     def learn_step(self):
+        """Training learn step."""
         return self._learn_step
 
     @learn_step.setter
@@ -179,6 +325,7 @@ class StochasticLinearRegression(LinearRegression):
 
     @property
     def early_stopper(self):
+        """Callable used for early stopping."""
         return self._early_stopper
 
     @early_stopper.setter
@@ -216,6 +363,30 @@ class StochasticLinearRegression(LinearRegression):
         return self.parameters
 
     def fit_step(self, X, y, sample_weights=None):
+        """Perform a learning step.
+
+        Arguments:
+
+            `X` (`numpy.typing.ArrayLike`) - Training observations (features,
+            regressor, predictors).
+
+            `y` (`numpy.typing.ArrayLike`) - Training labels (result, target,
+            response).
+
+            `sample_weights` (`Union[None, numpy.typing.ArrayLike]`) -
+            Training entries weights.
+
+        Returns:
+
+            `self.parameters` (`numpy.ndarray[numpy.float64]`) - The model
+            parameters after the fit step.
+
+        Raises:
+
+            `ValueError` - If `X` is empty, `X` isn't a 2D-array, `y` or
+            `sample_weights` aren't flat arrays or column vectors or aren't
+            compatible with `X`.
+        """
         if self._parameters is None:
             X, y, sample_weights = self._check(X, y, sample_weights)
             parameters = np.zeros((X.shape[1] + 1, 1), dtype=X.dtype)
@@ -225,6 +396,35 @@ class StochasticLinearRegression(LinearRegression):
         return self._fit_step(X, y, sample_weights)
 
     def fit(self, X, y, num_epochs, batch_size, sample_weights=None):
+        """Fit model to data.
+
+        Arguments:
+
+            `X` (`numpy.typing.ArrayLike`) - Training observations (features,
+            regressor, predictors).
+
+            `y` (`numpy.typing.ArrayLike`) - Training labels (result, target,
+            response).
+
+            `num_epochs` (`int`) - Number of training apochs.
+
+            `batch_size` (`int`) - Batch size. If `batch_size < 1`, all entries
+            are used in each training step.
+
+            `sample_weights` (`Union[None, numpy.typing.ArrayLike]`) -
+            Training entries weights.
+
+        Returns:
+
+            `self.parameters` (`numpy.ndarray[numpy.float64]`) - The model
+            parameters after the fit.
+
+        Raises:
+
+            `ValueError` - If `X` is empty, `X` isn't a 2D-array, `y` or
+            `sample_weights` aren't flat arrays or column vectors or aren't
+            compatible with `X`. If `num_epochs` isn't at least 1.
+        """
         if num_epochs < 1:
             raise ValueError("`num_epochs` must be at least 1.")
         X, y, sample_weights = self._check(X, y, sample_weights)
