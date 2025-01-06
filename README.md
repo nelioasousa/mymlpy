@@ -69,29 +69,27 @@ positions of batches to enable faster access during subsequent iterations.
 ### `mymlpy.datasets.parsers`
 String parsing functionality.
 
-`def missing_data(missing_data_repr, missing_data_placeholder=None, case_sensitive=True, strip_values=False)`
-
-Decorator to enhance parsers with the ability to handle missing data.
-
-This decorator wraps a simple parser and extends its functionality to
+> `def missing_data(missing_data_repr, missing_data_placeholder=None, case_sensitive=True, strip_values=False)`
+>
+> Decorator to enhance parsers with the ability to handle missing data.
+>
+> This decorator wraps a simple parser and extends its functionality to
 recognize and appropriately process missing values.
 
-`class OneHotParser(categories, ignore_unknowns=False, case_sensitive=True, strip_values=False)`
+> `class OneHotParser(categories, ignore_unknowns=False, case_sensitive=True, strip_values=False)`
+>
+> Parsers for one-hot encoding of categorical data.
 
-Parsers for one-hot encoding of categorical data.
-
-`class IndexParser(categories, unknowns_index=None, case_sensitive=True, strip_values=False)`
-
-Parsers for index encoding of categorical data.
+> `class IndexParser(categories, unknowns_index=None, case_sensitive=True, strip_values=False)`
+>
+> Parsers for index encoding of categorical data.
 
 ### `mymlpy.datasets.normalizers`
 Normalizers for array like datasets.
 
-`class ZScoreNormalizer(data=None)`
-
-Implement '0 mean' and '1 standard deviation' normalization.
-
-Normalization is performed along the first axis.
+> `class ZScoreNormalizer(data=None)`
+>
+> Implement '0 mean' and '1 standard deviation' normalization.
 
 ## `mymlpy.linear`
 Linear models.
@@ -99,26 +97,24 @@ Linear models.
 ### `mymlpy.linear.regression`
 Linear regression models.
 
-`class LinearRegression(ridge_alpha=0.0)`
+> `class LinearRegression(ridge_alpha=0.0)`
+>
+> Linear regression using Ordinary Least Squares (OLS).
 
-Linear regression using Ordinary Least Squares (OLS).
-
-`class StochasticLinearRegression(learn_step, ridge_alpha=0.0, early_stopper=None)`
-
-Linear regression using Stochastic Gradient Descent (SGD).
+> `class StochasticLinearRegression(learn_step, ridge_alpha=0.0, early_stopper=None)`
+>
+> Linear regression using Stochastic Gradient Descent (SGD).
 
 ### `mymlpy.linear.classification`
 Linear classification models.
 
-`class BinaryLogisticRegression(learn_step, ridge_alpha=0.0, early_stopper=None)`
-
-Binary logistic regression using Stochastic Gradient Descent (SGD).
+> `class BinaryLogisticRegression(learn_step, ridge_alpha=0.0, early_stopper=None)`
+>
+> Binary logistic regression using Stochastic Gradient Descent (SGD).
 
 ## `mymlpy.activations`
 Non-linear activation functions.
 
-`def sigmoid(z)`
-
-Computes the sigmoid function.
-
-The sigmoid function is defined as 1 / (1 + exp(-x)).
+> `def sigmoid(z)`
+>
+> Computes the sigmoid function.
