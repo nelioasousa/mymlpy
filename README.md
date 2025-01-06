@@ -41,8 +41,8 @@ mymlpy (package)
 ## `mymlpy.datasets`
 Package for handling datasets stored in the local file system.
 
-`def split_data(data, proportions, shuffle=False, categorizer=None, return_copies=False)`
-
+> `def split_data(data, proportions, shuffle=False, categorizer=None, return_copies=False)`
+>
 > Split data based on proportions.
 
 > `class TextDatasetBatchIterator(file_path, batch_size, parsers, separator=',', skip_lines=0, expand_sequences=False, ignore_errors=False)`
@@ -54,19 +54,16 @@ be directly converted to homogeneous numpy arrays. Supports flexible
 iteration, including forward and backward traversal, and stores file
 positions of batches to enable faster access during subsequent iterations.
 
-`class KFold(data, k, shuffle=False, categorizer=None, return_copies=False)`
-
-> K-fold cross validation.
+> `class KFold(data, k, shuffle=False, categorizer=None, return_copies=False)`
 >
-> Stratified folding is not reliable for very small datasets with categories
-that have fewer entries than the number of folds.
+> K-fold cross validation.
 
-`class ArrayDataset(data, dtype=None, copy=None)`
-
+> `class ArrayDataset(data, dtype=None, copy=None)`
+>
 > Utility wrapper for numpy arrays representing tabular datasets.
 
-`class ArrayBatchIterator(data, batch_size, return_copies=False)`
-
+> `class ArrayBatchIterator(data, batch_size, return_copies=False)`
+>
 > Batch iteration functionality for numpy arrays.
 
 ### `mymlpy.datasets.parsers`
