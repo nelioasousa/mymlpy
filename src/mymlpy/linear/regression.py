@@ -58,8 +58,8 @@ class LinearRegression:
         self._parameters = None
 
     def _check_X(self, X, features_dim=None):
-        if not X.shape[0]:
-            raise ValueError("`X` is empty.")
+        if not X.shape or not X.shape[0]:
+            raise ValueError("`X` can't be empty.")
         if len(X.shape) != 2:
             raise ValueError("`X` must be a 2D-array (a matrix).")
         if features_dim is not None and X.shape[1] != features_dim:
@@ -68,7 +68,7 @@ class LinearRegression:
             )
 
     def _check_y(self, y, N):
-        if len(y.shape) > 2:
+        if len(y.shape) not in (1, 2):
             raise ValueError("`y` must be a flat array or a column vector.")
         if len(y.shape) == 2 and y.shape[1] != 1:
             raise ValueError("Multi-output/Multi-class regression not supported.")
@@ -78,7 +78,9 @@ class LinearRegression:
             raise ValueError("`y` isn't consistent with `X`.")
 
     def _check_sample_weights(self, sample_weights, N):
-        if len(sample_weights.shape) > 2:
+        if len(sample_weights.shape) not in (1, 2) or (
+            len(sample_weights.shape) == 2 and sample_weights.shape[1] != 1
+        ):
             raise ValueError("`sample_weights` must be a flat array or a column vector.")
         try:
             sample_weights.resize((N, 1))

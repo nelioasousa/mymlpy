@@ -2,8 +2,6 @@ import numpy as np
 
 
 def _check_proportions(target_size, proportions):
-    if target_size < 1:
-        raise ValueError("`target_size` must be a positive number")
     if min(proportions) < 0.0:
         raise ValueError("`proportions` must contain only non-negative values")
     total = sum(proportions)
@@ -67,6 +65,8 @@ def split_data(data, proportions, shuffle=False, categorizer=None, return_copies
         1.0.
     """
     data = np.asarray(data)
+    if not data.shape or not data.shape[0]:
+        raise ValueError("`data` can't be empty.")
     proportions = _check_proportions(data.shape[0], proportions)
     if shuffle:
         np.random.shuffle(data)
@@ -210,8 +210,8 @@ class KFold:
     @data.setter
     def data(self, value):
         data = np.asarray(value)
-        if not data.shape[0]:
-            raise ValueError("Empty arrays are not allowed.")
+        if not data.shape or not data.shape[0]:
+            raise ValueError("`data` can't be empty.")
         self._data = data
         self._shape = None
 
