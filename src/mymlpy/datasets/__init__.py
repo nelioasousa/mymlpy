@@ -1,6 +1,6 @@
 """Package for handling datasets stored in the local file system."""
 
-from mymlpy.datasets import parsers
+from mymlpy.datasets import normalizers, parsers
 
 from mymlpy.datasets._text_iterator import TextDatasetBatchIterator
 from mymlpy.datasets._split import KFold, split_data
