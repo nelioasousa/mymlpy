@@ -7,13 +7,11 @@ Installation directly from GitHub repository:
 
 ```
 $ pip install git+https://github.com/nelioasousa/mymlpy.git@main
-or
-$ pip install git+git@github.com:nelioasousa/mymlpy.git@main
 ```
 
 See [pip VCS support](https://pip.pypa.io/en/stable/topics/vcs-support/) for more information.
 
-Cloning before installation (Linux):
+Installation from local copy (Linux):
 
 ```
 $ cd <path>
