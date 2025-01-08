@@ -254,8 +254,9 @@ class LinearRegression:
             `ValueError` - If `y` is empty, or isn't a flat array or column
             vector. If `y_pred` or `sample_weights` aren't compatible with `y`.
         """
-        # TODO: check if y is empty
         y = np.asarray(y)
+        if not y.shape or not y.shape[0]:
+            raise ValueError("`y` can't be empty.")
         self._check_y(y, y.shape[0])
         y_pred = np.asarray(y_pred)
         self._check_y(y_pred, y.shape[0])
