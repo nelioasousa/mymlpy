@@ -1,6 +1,6 @@
 """String parsing functionality."""
 
-from collections.abc import Iterable
+from collections.abc import Sequence
 from functools import wraps
 
 
@@ -42,8 +42,7 @@ def missing_data(
     """
     if isinstance(missing_data_repr, str):
         missing_data_repr = (missing_data_repr,)
-    # TODO: change check to Sequence instead of Iterable
-    if isinstance(missing_data_repr, Iterable) and not isinstance(
+    if isinstance(missing_data_repr, Sequence) and not isinstance(
         missing_data_repr, bytes
     ):
         missing_data_repr = (
@@ -57,7 +56,7 @@ def missing_data(
         missing_data_repr = frozenset(missing_data_repr)
     else:
         raise ValueError(
-            "`missing_data_repr` must be either a `str` object or an instance of `collections.abc.Iterable`"
+            "`missing_data_repr` must be either a `str` object or an instance of `collections.abc.Sequence`"
         )
 
     def parser_decorator(parser):
