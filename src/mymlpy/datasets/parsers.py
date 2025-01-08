@@ -79,7 +79,8 @@ def _unique_entries(data, sort_key):
     except AttributeError:
         pass
     categories = list(frozenset(data))
-    categories.sort(key=sort_key)
+    if sort_key is not False:
+        categories.sort(key=sort_key)
     return categories
 
 
@@ -235,7 +236,7 @@ class OneHotParser:
     def from_data(
         cls,
         data,
-        sort_key=None,
+        sort_key=False,
         ignore_unknowns=False,
         case_sensitive=True,
         strip_values=False,
@@ -249,10 +250,14 @@ class OneHotParser:
             `numpy.ndarray`) then `data.flatten()` is called and the result is
             used instead.
 
-            `sort_key` (`Union[None, collections.abc.Callable[[str], typing.Any]]`) -
-            Function returning the key values for the mandatory sorting
-            operation. The default is `None`, meaning that the intrinsic order
-            of the elements is used.
+            `sort_key` (`Union[False, None, collections.abc.Callable[[str], typing.Any]]`) -
+            Controls the sorting of unique categories collected from `data`.
+            If set to `False`, the default, no sorting is performed, and the
+            categories retain the order in which they first appear in `data`.
+            If set to `None`, the categories are sorted using the intrinsic
+            order of `str` instances. If not `False` or `None`, this should be
+            a custom key function, similar to the `key` argument in Python's
+            `sorted` built-in function, to define a custom sort order.
 
             `ignore_unknowns` (`bool`) - If ser to `True`, unknown categories
             don't raise `ValueError` and return a list with all category flags
@@ -274,7 +279,6 @@ class OneHotParser:
 
             No exception is directly raised.
         """
-        # TODO: sort_key=False for skip sorting
         return cls(
             categories=_unique_entries(data, sort_key),
             ignore_unknowns=ignore_unknowns,
@@ -402,7 +406,7 @@ class IndexParser(OneHotParser):
     def from_data(
         cls,
         data,
-        sort_key=None,
+        sort_key=False,
         unknowns_index=None,
         case_sensitive=True,
         strip_values=False,
@@ -416,10 +420,14 @@ class IndexParser(OneHotParser):
             `numpy.ndarray`) then `data.flatten()` is called and the result is
             used instead.
 
-            `sort_key` (`Union[None, collections.abc.Callable[[str], typing.Any]]`) -
-            Function returning the key values for the mandatory sorting
-            operation. The default is `None`, meaning that the intrinsic order
-            of the elements is used.
+            `sort_key` (`Union[False, None, collections.abc.Callable[[str], typing.Any]]`) -
+            Controls the sorting of unique categories collected from `data`.
+            If set to `False`, the default, no sorting is performed, and the
+            categories retain the order in which they first appear in `data`.
+            If set to `None`, the categories are sorted using the intrinsic
+            order of `str` instances. If not `False` or `None`, this should be
+            a custom key function, similar to the `key` argument in Python's
+            `sorted` built-in function, to define a custom sort order.
 
             `unknowns_index` (`Union[None, int]`) - Index returned when unknown
             categories are encountered. If `None`, unknown categories raise
@@ -441,7 +449,6 @@ class IndexParser(OneHotParser):
 
             No exception is directly raised.
         """
-        # TODO: sort_key=False for skip sorting
         return cls(
             categories=_unique_entries(data, sort_key),
             unknowns_index=unknowns_index,
