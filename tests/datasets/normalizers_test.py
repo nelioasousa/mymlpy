@@ -16,5 +16,5 @@ def test_zscore_normalizer():
     norm_data = normalizer(data)
     norm_data_check = (data - means) / stds
     assert np.array_equal(norm_data, norm_data_check)
-    unnormilized_data = normalizer.unnormalize(norm_data).astype(data.dtype)
+    unnormilized_data = normalizer.unnormalize(norm_data).round().astype(data.dtype)
     assert np.array_equal(data, unnormilized_data)
