@@ -1,9 +1,15 @@
 # Description
 Python library for Machine Learning.
 
+Feel free to contribute to the project! While there’s no strict contribution policy or formal guidelines,
+adhering to the [pre-commit hooks](./.pre-commit-config.yaml) is mandatory (install `mymlpy[dev]` in a development environment).
 
 # Installation
-Installation directly from GitHub repository:
+The library is not available on [PyPI](https://pypi.org/), so you can't install it using `pip install mymlpy`.
+This is because `mymlpy` is not intended for production use; it’s a personal project created for learning and
+experimentation. However, you can still install it using one of the following methods:
+
+1. Installation directly from GitHub repository:
 
 ```
 $ pip install git+https://github.com/nelioasousa/mymlpy.git@main
@@ -11,7 +17,7 @@ $ pip install git+https://github.com/nelioasousa/mymlpy.git@main
 
 See [pip VCS support](https://pip.pypa.io/en/stable/topics/vcs-support/) for more information.
 
-Installation from local copy (Linux):
+2. Installation from local copy (Linux):
 
 ```
 $ cd <path>
@@ -62,6 +68,53 @@ mymlpy (package)
   |-- activations (module)
   |      |
   |      |-- sigmoid
+```
+
+Use Python's built-in `help` function or the `pydoc` standard library to see the full documentaion of each package, module, class or function. E.g:
+
+```
+(venv) $ python -m pydoc mymlpy.datasets.split_data
+```
+
+Output:
+
+```
+Help on function split_data in mymlpy.datasets:
+
+mymlpy.datasets.split_data = split_data(data, proportions, shuffle=False, categorizer=None, return_copies=False)
+    Split data based on proportions.
+
+    Arguments:
+
+        `data` (`numpy.typing.ArrayLike`) - Data to split. If not a numpy
+        array, one is constructed based on `data`. Can't be empty.
+
+        `proportions` (`typing.Sequence[numbers.Real]`) - Proportions for each
+        split set. If the proportions sum to less than 1.0, the last proportion
+        is inferred to make the total equal to 1.0.
+
+        `shuffle` (`bool`) - Whether to shuffle `data` in-place before
+        splitting. If `data` isn't a numpy array, it will be copied into one
+        and this copy that will be shuffled.
+
+        `categorizer` (`collections.abc.Callable[[numpy.ndarray], typing.Hashable]`) -
+        A callable that returns a unique hashable object for each entry present
+        in `data`. `categorizer` will be called once for each entry in `data`
+        and receive it as the first and only positional argument and
+        must return a hashable value representing the entry's category.
+
+        `return_copies` (`bool`) - Whether to return the splits as copies or
+        views of `data`.
+
+    Returns:
+
+        `tuple[numpy.ndarray]` - The `data` splits.
+
+    Raises:
+
+        `ValueError` - Raised when `data` is empty, `proportions` contains
+        negative values, or when `proportions` sum to a total greater than
+        1.0.
 ```
 
 ## `mymlpy.datasets`
