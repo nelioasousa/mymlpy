@@ -2,7 +2,8 @@
 Python library for Machine Learning.
 
 Feel free to contribute to the project! While there’s no strict contribution policy or formal guidelines,
-adhering to the [pre-commit hooks](./.pre-commit-config.yaml) is mandatory (install `mymlpy[dev]` in a development environment).
+adhering to the [pre-commit hooks](./.pre-commit-config.yaml) is mandatory (install `mymlpy[dev]` in a
+development environment and [install the hooks](https://pre-commit.com/#3-install-the-git-hook-scripts)).
 
 # Installation
 The library is not available on [PyPI](https://pypi.org/), so you can't install it using `pip install mymlpy`.
