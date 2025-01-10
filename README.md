@@ -5,6 +5,9 @@ Feel free to contribute to the project! While there’s no strict contribution p
 adhering to the [pre-commit hooks](./.pre-commit-config.yaml) is mandatory (install `mymlpy[dev]` in a
 development environment and [install the hooks](https://pre-commit.com/#3-install-the-git-hook-scripts)).
 
+[See my video about this project](https://youtu.be/5Srvlsrmkww?si=guetALsAvyhIJcD3) for the [CS50's](https://www.edx.org/learn/computer-science/harvard-university-cs50-s-introduction-to-computer-science) final project.
+
+
 # Installation
 The library is not available on [PyPI](https://pypi.org/), so you can't install it using `pip install mymlpy`.
 This is because `mymlpy` is not intended for production use; it’s a personal project created for learning and
