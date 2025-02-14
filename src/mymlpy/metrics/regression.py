@@ -1,3 +1,5 @@
+"""Evaluation metrics for regression tasks."""
+
 import numpy as np
 
 from mymlpy.utils.numpy import build_vector

@@ -1,3 +1,5 @@
+"""Utility module for NumPy usage."""
+
 import numpy as np
 
 
