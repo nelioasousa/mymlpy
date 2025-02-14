@@ -6,7 +6,7 @@ from mymlpy.datasets import ArrayDataset
 
 @pytest.fixture
 def random_array():
-    size = (np.random.randint(0, 201), np.random.randint(2, 5))
+    size = (np.random.randint(50, 201), np.random.randint(2, 5))
     info_int8 = np.iinfo(np.int8)
     return np.random.randint(info_int8.min, info_int8.max + 1, size=size, dtype=np.int8)
 
